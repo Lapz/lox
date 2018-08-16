@@ -1,0 +1,10 @@
+[package]
+name = "lox"
+version = "0.1.0"
+authors = ["rowlandsonpratt <striderman34@gmail.com>"]
+
+[dependencies]
+
+
+[features]
+debug = []
