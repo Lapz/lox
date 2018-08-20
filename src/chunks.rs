@@ -1,6 +1,5 @@
-use value::Value;
 use util::TryFrom;
-
+use value::Value;
 
 type Line = u32;
 
@@ -20,9 +19,8 @@ pub enum OpCode {
     Add,
     Sub,
     Div,
-    Mul
+    Mul,
 }
-
 
 impl Chunk {
     pub fn new() -> Self {
@@ -70,7 +68,7 @@ impl Chunk {
             Ok(OpCode::Return) => simple_instruction("OPCODE::RETURN", offset),
             Ok(OpCode::Constant) => self.constant_instruction("OPCODE::CONSTANT", offset),
             Ok(OpCode::Negate) => simple_instruction("OPCODE::NEGATE", offset),
-            Ok(OpCode::Add) =>simple_instruction("OPCODE::ADD", offset),
+            Ok(OpCode::Add) => simple_instruction("OPCODE::ADD", offset),
             Ok(OpCode::Sub) => simple_instruction("OPCODE::SUB", offset),
             Ok(OpCode::Div) => simple_instruction("OPCODE::DIV", offset),
             Ok(OpCode::Mul) => simple_instruction("OPCODE::MUL", offset),
@@ -95,20 +93,19 @@ pub fn simple_instruction(name: &str, offset: usize) -> usize {
     offset + 1
 }
 
-
 impl TryFrom<u8> for OpCode {
-        type Error = u8;
+    type Error = u8;
 
-        fn try_from(original: u8) -> Result<OpCode, Self::Error> {
-            use opcode::*;
-            match original {
-                RETURN => Ok(OpCode::Return),
-                CONSTANT => Ok(OpCode::Constant),
-                NEGATE => Ok(OpCode::Negate),
-                ADD => Ok(OpCode::Add),
-                SUB => Ok(OpCode::Sub),
-                MUL => Ok(OpCode::Mul),
-                _ => Err(original),
-            }
+    fn try_from(original: u8) -> Result<OpCode, Self::Error> {
+        use opcode::*;
+        match original {
+            RETURN => Ok(OpCode::Return),
+            CONSTANT => Ok(OpCode::Constant),
+            NEGATE => Ok(OpCode::Negate),
+            ADD => Ok(OpCode::Add),
+            SUB => Ok(OpCode::Sub),
+            MUL => Ok(OpCode::Mul),
+            _ => Err(original),
         }
     }
+}

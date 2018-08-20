@@ -1,14 +1,13 @@
-use chunks::{Chunk};
-use op::{opcode};
+use chunks::Chunk;
+use op::opcode;
 use value::Value;
 
+const STACK_MAX: usize = 256;
 
-const STACK_MAX:usize = 256;
-
-pub struct VM <'a> {
+pub struct VM<'a> {
     chunk: &'a Chunk,
-    stack:[Value;STACK_MAX],
-    stack_top:usize,
+    stack: [Value; STACK_MAX],
+    stack_top: usize,
     ip: usize,
 }
 
@@ -18,8 +17,8 @@ pub enum VMResult {
     Ok,
 }
 
-impl <'a> VM <'a> {
-    pub fn new(chunk:&'a Chunk) -> Self {
+impl<'a> VM<'a> {
+    pub fn new(chunk: &'a Chunk) -> Self {
         VM {
             chunk,
             ip: 0,
@@ -35,8 +34,8 @@ impl <'a> VM <'a> {
 
     pub fn run(&mut self) -> VMResult {
         loop {
-            
-            debug!("{:?}", self.chunk.disassemble("test"));
+            #[cfg(feature = "debug")]
+            self.chunk.disassemble("test");
 
             if cfg!(feature = "stack") {
                 println!("[");
@@ -54,19 +53,17 @@ impl <'a> VM <'a> {
 
             match self.read_byte() {
                 opcode::RETURN => {
-                    println!("{}",self.pop());
-                    return VMResult::Ok
-                },
+                    println!("{}", self.pop());
+                    return VMResult::Ok;
+                }
                 opcode::CONSTANT => {
                     let constant = self.read_constant();
                     self.push(constant);
-
-                },
+                }
                 opcode::NEGATE => {
                     let v = self.pop();
                     self.push(-v);
-
-                },
+                }
                 opcode::ADD => binary_op!(+,self),
                 opcode::SUB => binary_op!(-,self),
                 opcode::MUL => binary_op!(*,self),
@@ -93,7 +90,7 @@ impl <'a> VM <'a> {
         self.stack_top = 0;
     }
 
-    fn push(&mut self,value:Value) {
+    fn push(&mut self, value: Value) {
         self.stack[self.stack_top] = value;
         self.stack_top += 1;
     }
@@ -104,4 +101,3 @@ impl <'a> VM <'a> {
         self.stack[self.stack_top]
     }
 }
-
