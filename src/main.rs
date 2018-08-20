@@ -10,6 +10,7 @@ mod util;
 mod value;
 mod vm;
 mod compiler;
+mod error;
 
 use chunks::Chunk;
 use scanner::Lexer;
@@ -80,7 +81,9 @@ fn run_file(path: &str) {
 
     let mut compiler = Compiler::new(tokens);
 
-    compiler.compile(&input);
+    compiler.compile().expect("Compilation Succedded");
+
+    println!("{:?}",compiler);
 
 
 
