@@ -3,25 +3,30 @@
 mod macros;
 mod chunks;
 mod op;
+mod pos;
+mod scanner;
+mod token;
 mod util;
 mod value;
 mod vm;
-mod scanner;
 
 use chunks::Chunk;
+use scanner::Lexer;
 use op::opcode;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use vm::{VM,VMResult};
+use vm::{VMResult, VM};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => {}
+        1 => {
+            repl()
+        }
         2 => {
-            // let
+            run_file(&args[1])
 
         }
 
@@ -66,9 +71,12 @@ fn run_file(path: &str) {
     if contents.is_empty() {
         ::std::process::exit(0)
     }
+
+    let mut lex = Lexer::new(&input);
+
+    let tokens = lex.lex().expect("Couldn't complete the lexing");
 }
 
 fn interpret(file: &str) -> VMResult {
-
     VMResult::Ok
 }
