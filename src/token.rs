@@ -1,9 +1,17 @@
-#[derive(Debug, PartialEq)]
+use std::slice::Iter;
+use std::vec::IntoIter;
+use pos::Spanned;
+#[derive(Debug, PartialEq,Clone)]
 pub struct Token<'a> {
     pub ty: TokenType<'a>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug,Clone)]
+pub struct TokenIter<'a> {
+    pub iter:IntoIter<Spanned<Token<'a>>>
+}
+
+#[derive(Debug, PartialEq,Clone)]
 pub enum TokenType<'a> {
     IDENT(&'a str),
     LPAREN,
@@ -51,5 +59,14 @@ pub enum TokenType<'a> {
 impl<'a> Token<'a> {
     pub fn new(ty: TokenType<'a>) -> Token<'a> {
         Self { ty }
+    }
+}
+
+
+impl<'a>  Iterator for TokenIter<'a> {
+    type Item = Spanned<Token<'a>>;
+
+    fn next(&mut self) -> Option<Spanned<Token<'a>>> {
+        self.iter.next()
     }
 }

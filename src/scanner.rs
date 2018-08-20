@@ -159,7 +159,7 @@ impl<'a> Lexer<'a> {
         spans(look_up_identifier(ident), start, end)
     }
 
-    fn next(&mut self) -> Result<Spanned<Token<'a>>, LexerError> {
+    pub fn next(&mut self) -> Result<Spanned<Token<'a>>, LexerError> {
         while let Some((start, ch)) = self.advance() {
             return match ch {
                 '.' => Ok(span(TokenType::DOT, start)),

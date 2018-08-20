@@ -9,6 +9,7 @@ mod token;
 mod util;
 mod value;
 mod vm;
+mod compiler;
 
 use chunks::Chunk;
 use scanner::Lexer;
@@ -17,6 +18,7 @@ use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use vm::{VMResult, VM};
+use compiler::Compiler;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -75,6 +77,14 @@ fn run_file(path: &str) {
     let mut lex = Lexer::new(&input);
 
     let tokens = lex.lex().expect("Couldn't complete the lexing");
+
+    let mut compiler = Compiler::new(tokens);
+
+    compiler.compile(&input);
+
+
+
+
 }
 
 fn interpret(file: &str) -> VMResult {
