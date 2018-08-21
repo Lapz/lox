@@ -1,3 +1,5 @@
+// TODO: add an error reporter
+// Pretty printing of errors
 use scanner::Lexer;
 use token::{TokenType,Token};
 use std::iter::Peekable;
@@ -128,7 +130,52 @@ impl <'a> Compiler<'a> {
         }
     }
 
-    
+    pub fn grouping(&mut self) -> Result<(),()> {
+        self.expression()?;
+        self.check(TokenType::RPAREN, "Expeceted '(' ")
+    }
+
+
+    pub fn unary(&mut self) -> Result<(),()> {
+        let op_type = self.get_un_op()?;
+        self.expression()?;
+        match op_type {
+            Operator::Negate => {
+                self.emit_byte(opcode::NEGATE);
+                Ok(())
+            },
+
+            _ => unreachable!()
+        }
+    }
+
+    pub fn get_un_op(&self) -> Result<Operator,()> {
+        match &self.current_token.as_ref().unwrap().value.ty {
+            &TokenType::MINUS => Ok(Operator::Negate),
+            &TokenType::BANG => Ok(Operator::Bang),
+            _ => Err(())
+        }
+    }
 }
 
 
+
+pub enum Operator {
+    Negate,
+    Bang,
+}
+
+
+pub enum Precedence {
+    None,
+    Assignment,
+    Or,
+    And,
+    Equality,
+    Comparison,
+    Term,
+    Factor,
+    Unary,
+    Call,
+    Primary,
+}
