@@ -1,6 +1,8 @@
 use std::slice::Iter;
 use std::vec::IntoIter;
 use pos::Spanned;
+use std::fmt::{self,Display};
+
 #[derive(Debug, PartialEq,Clone)]
 pub struct Token<'a> {
     pub ty: TokenType<'a>,
@@ -54,6 +56,54 @@ pub enum TokenType<'a> {
     WHILE,
     ERROR,
     EOF,
+}
+impl<'a> Display for TokenType<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            TokenType::EOF => write!(f, "\0"),
+            TokenType::IDENT(s) => write!(f, "{}", s),
+            TokenType::NUMBER(ref i) => write!(f, "{}", i),
+            TokenType::EQUAL=> write!(f, "="),
+            TokenType::PLUS => write!(f, "+"),
+            TokenType::MINUS => write!(f, "-"),
+            TokenType::BANG => write!(f, "!"),
+            TokenType::STAR => write!(f, "*"),
+            TokenType::SLASH => write!(f, "\\"),
+            TokenType::DOT => write!(f, "."),
+            TokenType::LESS => write!(f, "<"),       // <
+            TokenType::GREATER => write!(f, ">"),    // >
+            TokenType::EQUALEQUAL => write!(f, "=="),    // ==
+            TokenType::BANGEQUAL => write!(f, "!="),     // !=
+            TokenType::LESSEQUAL => write!(f, "<="), // <=
+            TokenType::GREATEREQUAL => write!(f, "=>"), // =>
+            TokenType::STRING(ref s) => write!(f, "{:?}", s),
+            TokenType::COMMA => write!(f, ","),     // ,
+            TokenType::COMMENT => write!(f, "//"),  // //
+            TokenType::SEMICOLON => write!(f, ";"), //
+            TokenType::LPAREN => write!(f, "("),    // (
+            TokenType::RPAREN => write!(f, ")"),    // )
+            TokenType::LBRACE => write!(f, "{{"),   // {
+            TokenType::RBRACE => write!(f, "}}"),   // }
+            // Keywords,
+            TokenType::FUN => write!(f, "fun"),
+            TokenType::PRINT => write!(f, "print"),
+            TokenType::VAR => write!(f, "var"),
+            TokenType::IF => write!(f, "if"),
+            TokenType::ELSE => write!(f, "else"),
+            TokenType::RETURN => write!(f, "return"),
+            TokenType::TRUE=> write!(f, "true"),
+            TokenType::FALSE => write!(f, "false"),
+            TokenType::THIS => write!(f, "this"),
+            TokenType::CLASS => write!(f, "class"),
+            TokenType::FOR => write!(f, "for"),
+            TokenType::WHILE => write!(f, "while"),
+            TokenType::SUPER => write!(f, "super"),
+            TokenType::ERROR => write!(f, "error"),
+            TokenType::AND => write!(f, "and"),
+            TokenType::OR => write!(f, "or"),
+            TokenType::NIL => write!(f, "nil"),
+        }
+    }
 }
 
 impl<'a> Token<'a> {

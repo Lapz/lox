@@ -3,11 +3,12 @@
 use scanner::Lexer;
 use token::{TokenType,Token};
 use std::iter::Peekable;
-use pos::Spanned;
+use pos::{Spanned,EMPTYSPAN};
 use chunks::Chunk;
 use opcode;
 use std::collections::{VecDeque};
 use value::Value;
+use error::Reporter;
 
 #[derive(Debug)]
 pub struct Compiler<'a> {
@@ -15,13 +16,14 @@ pub struct Compiler<'a> {
     chunks:Vec<Chunk>,
     current_token:Option<Spanned<Token<'a>>>,
     tokens:VecDeque<Spanned<Token<'a>>>,
+    reporter: Reporter,
     line:u32,
 }
 
 
 
 impl <'a> Compiler<'a> {
-    pub fn new(tokens:Vec<Spanned<Token<'a>>>) -> Self {
+    pub fn new(reporter:Reporter,tokens:Vec<Spanned<Token<'a>>>) -> Self {
         let mut tokens = tokens.into_iter().collect::<VecDeque<_>>();
         let current_token = tokens.pop_front();
         
@@ -30,6 +32,7 @@ impl <'a> Compiler<'a> {
             chunks:vec![],
             tokens,
             current_token,
+            reporter,
             line:0
         }
     }
@@ -102,6 +105,9 @@ impl <'a> Compiler<'a> {
             Ok(())
 
         }else {
+
+            let msg = format!("Expected '{}' found '{}'",ty,self.peek().unwrap_or(&TokenType::EOF));
+            self.reporter.error(msg,  *self.tokens.front().map(|spanned|&spanned.span).unwrap_or(&EMPTYSPAN));
             Err(())
         }
     }

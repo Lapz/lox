@@ -13,6 +13,19 @@ pub struct Spanned<T> {
     pub value: T,
 }
 
+pub const EMPTYSPAN: Span = Span {
+    start: Position {
+        line: 1,
+        column: 0,
+        absolute: 1,
+    },
+    end: Position {
+        line: 1,
+        column: 0,
+        absolute: 1,
+    },
+};
+
 /// A span between two locations in a source file
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Span {

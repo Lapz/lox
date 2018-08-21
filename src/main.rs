@@ -12,7 +12,7 @@ mod vm;
 mod compiler;
 mod error;
 
-use chunks::Chunk;
+use error::Reporter;
 use scanner::Lexer;
 use op::opcode;
 use std::env;
@@ -79,7 +79,9 @@ fn run_file(path: &str) {
 
     let tokens = lex.lex().expect("Couldn't complete the lexing");
 
-    let mut compiler = Compiler::new(tokens);
+    let mut reporter = Reporter::new();
+
+    let mut compiler = Compiler::new(reporter,tokens);
 
     compiler.compile().expect("Compilation Succedded");
 
