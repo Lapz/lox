@@ -1,19 +1,19 @@
+use pos::Spanned;
+use std::fmt::{self, Display};
 use std::slice::Iter;
 use std::vec::IntoIter;
-use pos::Spanned;
-use std::fmt::{self,Display};
 
-#[derive(Debug, PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
     pub ty: TokenType<'a>,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct TokenIter<'a> {
-    pub iter:IntoIter<Spanned<Token<'a>>>
+    pub iter: IntoIter<Spanned<Token<'a>>>,
 }
 
-#[derive(Debug, PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType<'a> {
     IDENT(&'a str),
     LPAREN,
@@ -63,18 +63,18 @@ impl<'a> Display for TokenType<'a> {
             TokenType::EOF => write!(f, "\0"),
             TokenType::IDENT(s) => write!(f, "{}", s),
             TokenType::NUMBER(ref i) => write!(f, "{}", i),
-            TokenType::EQUAL=> write!(f, "="),
+            TokenType::EQUAL => write!(f, "="),
             TokenType::PLUS => write!(f, "+"),
             TokenType::MINUS => write!(f, "-"),
             TokenType::BANG => write!(f, "!"),
             TokenType::STAR => write!(f, "*"),
             TokenType::SLASH => write!(f, "\\"),
             TokenType::DOT => write!(f, "."),
-            TokenType::LESS => write!(f, "<"),       // <
-            TokenType::GREATER => write!(f, ">"),    // >
-            TokenType::EQUALEQUAL => write!(f, "=="),    // ==
-            TokenType::BANGEQUAL => write!(f, "!="),     // !=
-            TokenType::LESSEQUAL => write!(f, "<="), // <=
+            TokenType::LESS => write!(f, "<"),          // <
+            TokenType::GREATER => write!(f, ">"),       // >
+            TokenType::EQUALEQUAL => write!(f, "=="),   // ==
+            TokenType::BANGEQUAL => write!(f, "!="),    // !=
+            TokenType::LESSEQUAL => write!(f, "<="),    // <=
             TokenType::GREATEREQUAL => write!(f, "=>"), // =>
             TokenType::STRING(ref s) => write!(f, "{:?}", s),
             TokenType::COMMA => write!(f, ","),     // ,
@@ -91,7 +91,7 @@ impl<'a> Display for TokenType<'a> {
             TokenType::IF => write!(f, "if"),
             TokenType::ELSE => write!(f, "else"),
             TokenType::RETURN => write!(f, "return"),
-            TokenType::TRUE=> write!(f, "true"),
+            TokenType::TRUE => write!(f, "true"),
             TokenType::FALSE => write!(f, "false"),
             TokenType::THIS => write!(f, "this"),
             TokenType::CLASS => write!(f, "class"),
@@ -112,8 +112,7 @@ impl<'a> Token<'a> {
     }
 }
 
-
-impl<'a>  Iterator for TokenIter<'a> {
+impl<'a> Iterator for TokenIter<'a> {
     type Item = Spanned<Token<'a>>;
 
     fn next(&mut self) -> Option<Spanned<Token<'a>>> {

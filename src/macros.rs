@@ -12,3 +12,12 @@ macro_rules! binary_op {
         $_self.push(a $op b)
     }};
 }
+
+macro_rules! eof_error {
+    ($_self:ident) => {{
+        let msg = format!("Unexpected EOF");
+        let end = $_self.reporter.end();
+        $_self.reporter.error(msg, end);
+        Err(())
+    }};
+}

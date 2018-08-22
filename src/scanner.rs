@@ -1,3 +1,4 @@
+use error::Reporter;
 use pos::{CharPosition, Position, Span, Spanned};
 use std::fmt::{self, Display};
 use std::str::Chars;
@@ -11,33 +12,24 @@ pub enum LexerError {
     Unexpected(char, Position),
 }
 
-impl Display for LexerError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            LexerError::UnclosedString => write!(f, "unclosed string"),
-            LexerError::EOF => write!(f, "Unexpected EOf"),
-            LexerError::UnclosedBlockComment => write!(f, "unclosed block comment"),
-            LexerError::Unexpected(ref c, ref p) => write!(f, "Unexpected char {} on {}", c, p),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     // A lexer instance
     input: &'a str,
+    reporter: Reporter,
     chars: CharPosition<'a>,
     lookahead: Option<(Position, char)>,
     end: Position,
 }
 impl<'a> Lexer<'a> {
     /// Returns a new Lexer
-    pub fn new(input: &'a str) -> Lexer {
+    pub fn new(input: &'a str, reporter: Reporter) -> Lexer {
         let mut chars = CharPosition::new(input);
         let end = chars.pos;
         Lexer {
             input,
             end,
+            reporter,
             lookahead: chars.next(),
             chars,
         }
@@ -53,6 +45,20 @@ impl<'a> Lexer<'a> {
 
             None => None,
         }
+    }
+
+    fn span_error<T: Into<String>>(&mut self, msg: T, start: Position, end: Position) {
+        self.reporter.error(msg.into(), Span { start, end })
+    }
+
+    fn error<T: Into<String>>(&mut self, msg: T, pos: Position) {
+        self.reporter.error(
+            msg.into(),
+            Span {
+                start: pos,
+                end: pos,
+            },
+        )
     }
 
     fn slice(&self, start: Position, end: Position) -> &'a str {
@@ -84,7 +90,7 @@ impl<'a> Lexer<'a> {
         let (_, _) = self.take_whilst(start, |ch| ch != '\n');
     }
 
-    fn block_comment(&mut self) -> Result<(), LexerError> {
+    fn block_comment(&mut self, start: Position) -> Result<(), ()> {
         self.advance(); // Eats the '*'
         loop {
             self.advance(); // Eats the '*'
@@ -96,12 +102,17 @@ impl<'a> Lexer<'a> {
                 }
                 Some((_, _)) => continue,
 
-                None => return Err(LexerError::UnclosedBlockComment),
+                None => {
+                    let msg: String = LexerError::UnclosedBlockComment.into();
+
+                    self.span_error(msg, start, self.end);
+                    return Err(());
+                }
             }
         }
     }
 
-    fn string_literal(&mut self, start: Position) -> Result<Spanned<Token<'a>>, LexerError> {
+    fn string_literal(&mut self, start: Position) -> Result<Spanned<Token<'a>>, ()> {
         let mut string = String::new();
 
         while let Some((next, ch)) = self.advance() {
@@ -116,10 +127,14 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Err(LexerError::UnclosedString)
+        let msg: String = LexerError::UnclosedString.into();
+
+        self.span_error(msg, start, self.end);
+
+        Err(())
     }
 
-    fn number(&mut self, start: Position) -> Result<Spanned<Token<'a>>, LexerError> {
+    fn number(&mut self, start: Position) -> Result<Spanned<Token<'a>>, ()> {
         let (end, int) = self.take_whilst(start, |c| c.is_numeric());
 
         let (token, start, end) = match self.lookahead {
@@ -130,7 +145,11 @@ impl<'a> Lexer<'a> {
 
                 match self.lookahead {
                     Some((_, ch)) if ch.is_alphabetic() => {
-                        return Err(LexerError::Unexpected(ch, start)); // Rejects floats like 10.k
+                        let msg: String = LexerError::Unexpected(ch, start).into();
+
+                        self.error(msg, start);
+
+                        return Err(()); // Rejects floats like 10.k
                     }
 
                     _ => (
@@ -141,14 +160,17 @@ impl<'a> Lexer<'a> {
                 }
             }
 
-            Some((_, ch)) if ch.is_alphabetic() => return Err(LexerError::Unexpected(ch, start)),
-            None | Some(_) => {
-                if let Ok(val) = int.parse() {
-                    (TokenType::NUMBER(val), start, end)
-                } else {
-                    return Err(LexerError::EOF); // change
-                }
+            Some((_, ch)) if ch.is_alphabetic() => {
+                let msg: String = LexerError::Unexpected(ch, start).into();
+                self.error(msg, start);
+
+                return Err(());
             }
+            Some(_) | None => {
+                
+                (TokenType::NUMBER(int.parse().expect("Coundln't parse the float")), start, end)
+                
+            },
         };
 
         Ok(spans(token, start, end))
@@ -159,7 +181,7 @@ impl<'a> Lexer<'a> {
         spans(look_up_identifier(ident), start, end)
     }
 
-    pub fn next(&mut self) -> Result<Spanned<Token<'a>>, LexerError> {
+    pub fn next(&mut self) -> Result<Spanned<Token<'a>>, ()> {
         while let Some((start, ch)) = self.advance() {
             return match ch {
                 '.' => Ok(span(TokenType::DOT, start)),
@@ -177,7 +199,7 @@ impl<'a> Lexer<'a> {
                 // '%' => Ok(span(TokenType::MODULO, start)),
                 '"' => match self.string_literal(start) {
                     Ok(token) => Ok(token),
-                    Err(e) => Err(e),
+                    Err(_) => continue,
                 },
 
                 '=' => {
@@ -226,7 +248,8 @@ impl<'a> Lexer<'a> {
                         self.line_comment(start);
                         continue;
                     } else if self.peek(|ch| ch == '*') {
-                        self.block_comment()?;
+                        if let Err(_) =  self.block_comment(start) {
+                        }
                         continue;
                     } else {
                         Ok(span(TokenType::SLASH, start))
@@ -262,7 +285,12 @@ impl<'a> Lexer<'a> {
                 ch if ch.is_numeric() => self.number(start),
                 ch if is_letter_ch(ch) => Ok(self.identifier(start)),
                 ch if ch.is_whitespace() => continue,
-                ch => Err(LexerError::Unexpected(ch, start)),
+                ch => {
+                    let msg: String = LexerError::Unexpected(ch, start).into();
+                    self.error(msg, start);
+                   
+                    continue;
+                }
             };
         }
 
@@ -272,24 +300,27 @@ impl<'a> Lexer<'a> {
     pub fn lex(&mut self) -> Result<Vec<Spanned<Token<'a>>>, ()> {
         let mut tokens = vec![];
 
-        let mut errors = vec![];
-
         while self.lookahead.is_some() {
             match self.next() {
                 Ok(token) => tokens.push(token),
-                Err(e) => errors.push(e),
+                Err(_) => (),
             }
         }
-
+        
         tokens.push(span(TokenType::EOF, self.end));
 
         tokens.retain(|t| t.value.ty != TokenType::COMMENT);
 
-        if errors.is_empty() {
-            return Ok(tokens);
-        }
+        self.reporter.set_end(Span {
+            start: self.end,
+            end: self.end,
+        });
 
-        Err(())
+        if self.reporter.has_error() {
+            Err(())
+        } else {
+            Ok(tokens)
+        }
     }
 }
 
@@ -347,5 +378,38 @@ fn look_up_identifier(id: &str) -> TokenType {
         // "int" => TokenType::IntType,
         // "float" => TokenType::FloatType,
         _ => TokenType::IDENT(id),
+    }
+}
+
+impl Into<String> for LexerError {
+    fn into(self) -> String {
+        match self {
+            LexerError::UnclosedString => "Unclosed string".into(),
+            LexerError::EOF => "Unexpected EOF".into(),
+            LexerError::UnclosedBlockComment => "Unclosed block comment".into(),
+            LexerError::Unexpected(ref c, _) => format!("Unexpected char '{}' ", c),
+        }
+    }
+}
+
+impl Display for LexerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LexerError::UnclosedString => write!(f, "unclosed string"),
+            LexerError::EOF => write!(f, "Unexpected EOf"),
+            LexerError::UnclosedBlockComment => write!(f, "unclosed block comment"),
+            LexerError::Unexpected(ref c, ref p) => write!(f, "Unexpected char {} on {}", c, p),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test{
+    use super::Lexer;
+    use error::Reporter;
+    #[test] 
+
+    fn it_work() {
+        let source = "-10 a () {} ,.-+;/*!!= ";
     }
 }

@@ -2,6 +2,8 @@
 #[macro_use]
 mod macros;
 mod chunks;
+mod compiler;
+mod error;
 mod op;
 mod pos;
 mod scanner;
@@ -9,29 +11,22 @@ mod token;
 mod util;
 mod value;
 mod vm;
-mod compiler;
-mod error;
 
+use compiler::Compiler;
 use error::Reporter;
-use scanner::Lexer;
 use op::opcode;
+use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use vm::{VMResult, VM};
-use compiler::Compiler;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => {
-            repl()
-        }
-        2 => {
-            run_file(&args[1])
-
-        }
+        1 => repl(),
+        2 => run_file(&args[1]),
 
         _ => println!("Usage: rlox [path]"),
     }
@@ -75,21 +70,25 @@ fn run_file(path: &str) {
         ::std::process::exit(0)
     }
 
-    let mut lex = Lexer::new(&input);
+    let reporter = Reporter::new();
 
-    let tokens = lex.lex().expect("Couldn't complete the lexing");
+    let mut lex = Lexer::new(&input, reporter.clone());
 
-    let mut reporter = Reporter::new();
+    let tokens = match lex.lex() {
+        Ok(tokens) => tokens,
+        Err(_) => {
+            reporter.emit(&input);
+            ::std::process::exit(64)
+        }
+    };
 
-    let mut compiler = Compiler::new(reporter,tokens);
+    let mut compiler = Compiler::new(reporter.clone(), tokens);
 
-    compiler.compile().expect("Compilation Succedded");
+    if let Err(_) = compiler.compile() {
+        reporter.emit(&input)
+    }
 
-    println!("{:?}",compiler);
-
-
-
-
+    println!("{:?}",reporter);
 }
 
 fn interpret(file: &str) -> VMResult {
