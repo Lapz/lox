@@ -11,6 +11,7 @@ use std::iter::Peekable;
 use token::{Token, TokenType,RuleToken};
 use value::Value;
 use std::hash::Hash;
+use pratt::{PrefixParser,NameParser,UnaryParser};
 
 #[derive(Debug)]
 pub struct Compiler<'a> {
@@ -19,14 +20,10 @@ pub struct Compiler<'a> {
     current_token: Option<Spanned<Token<'a>>>,
     tokens: VecDeque<Spanned<Token<'a>>>,
     reporter: Reporter,
-    rules: HashMap<RuleToken, ParseRule<'a>>,
+    rules: HashMap<RuleToken, &'a PrefixParser>,
     infix_parsers: HashMap<TokenType<'a>, &'a InfixParser>,
     prefix: HashMap<TokenType<'a>, &'a PrefixParser>,
     line: u32,
-}
-
-trait PrefixParser: Debug {
-    fn parse(&self, compiler: &mut Compiler) -> Result<(), ()>;
 }
 
 trait InfixParser: Debug {
@@ -71,7 +68,7 @@ impl<'a> Compiler<'a> {
         let mut tokens = tokens.into_iter().collect::<VecDeque<_>>();
         let current_token = tokens.pop_front();
 
-        let compiler = Compiler {
+        let mut compiler = Compiler {
             chunk: Some(Chunk::new()),
             chunks: vec![],
             tokens,
@@ -83,74 +80,11 @@ impl<'a> Compiler<'a> {
             line: 0,
         };
 
-        let mut rules = HashMap::new();
-
-        // rules.insert(RuleToken::LPAREN,ParseRule {
-        //     infix:None,
-        //     prefix:Some(&Grouping),
-        //     precedence:Precedence::Call,
-        // });
-
-        // rules.insert(RuleToken::DOT, ParseRule{
-        //     infix:None,
-        //     prefix:None,
-        //     precedence:Precedence::None,
-        // });
-
-        // rules.insert(RuleToken::MINUS, ParseRule{
-        //     infix:Some(&Unary(Precedence::Term)),
-        //     prefix:Some(&Binary),
-        //     precedence:Precedence::Term,
-        // });
-
-        // rules.insert(RuleToken::PLUS, ParseRule{
-        //     infix:None,
-        //     prefix:Some(&Binary),
-        //     precedence:Precedence::Term,
-        // });
+        compiler.prefix(RuleToken::NUMBER,&NameParser);
+        compiler.prefix(RuleToken::MINUS,&UnaryParser);
 
 
-        // rules.insert(RuleToken::SLASH, ParseRule{
-        //     infix:None,
-        //     prefix:Some(&Binary),
-        //     precedence:Precedence::Factor,
-        // });
-
-        // rules.insert(RuleToken::STAR, ParseRule{
-        //     infix:None,
-        //     prefix:Some(&Binary),
-        //     precedence:Precedence::Factor,
-        // });
-
-        // rules.insert(RuleToken::BANG, ParseRule{
-        //     infix:None,
-        //     prefix:Some(&Binary),
-        //     precedence:Precedence::None,
-        // });
-
-        // rules.insert(RuleToken::BANGEQUAL,ParseRule {
-        //     infix:None,
-        //     prefix:None,
-        //     precedence:Precedence::Equality,
-        // });
-
-        // rules.insert(RuleToken::EQUAL, ParseRule{
-        //     infix:None,
-        //     prefix:None,
-        //     precedence:Precedence::None,
-        // });
-
-        // rules.insert(RuleToken::EQUALEQUAL,ParseRule {
-        //     infix:None,
-        //     prefix:None,
-        //     precedence:Precedence::Equality,
-        // });
-
-        // rules.insert(RuleToken::NUMBER,ParseRule {
-        //     infix:Some(&LiteralParser(Precedence::None)),
-        //     prefix:None,
-        //     precedence:Precedence::None,
-        // });
+    
 
         
 /*                     
@@ -188,8 +122,8 @@ impl<'a> Compiler<'a> {
         compiler
     }
 
-    pub fn prefix<T: PrefixParser + 'a>(&mut self, parser: &'a T, ty: TokenType<'a>) {
-        self.prefix.insert(ty, parser);
+    pub fn prefix<T: PrefixParser + 'a>(&mut self,ty:RuleToken, parser: &'a T) {
+        self.rules.insert(ty, parser);
     }
 
     pub fn error(&mut self,msg:String,span:Span) {
@@ -197,7 +131,7 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn compile(&mut self) -> Result<(), ()> {
-        self.unary()?;
+        self.expression()?;
         self.check(TokenType::EOF, "Expected EOF")?;
         self.end_chunk();
         Ok(())
@@ -275,6 +209,23 @@ impl<'a> Compiler<'a> {
         self.tokens.front().map(|spanned| &spanned.value.ty)
     }
 
+    pub fn current(&self) -> Result<&TokenType<'a>,()> {
+        let token = self.current_token.as_ref();
+
+        match &token {
+            Some(&Spanned {
+                value: Token {
+                    ref ty,
+                },
+                ..
+            }) => {
+                
+                Ok(ty)
+            }
+            None => eof_error!(self),
+        }
+    }
+
     // ========== PARSING ===========
 
     pub fn precedence(&mut self, pred: Precedence) -> Result<(), ()> {
@@ -302,11 +253,22 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn expression(&mut self) -> Result<(), ()> {
-        let token = self.peek()?;
+        let token = self.current()?;
+        let rule = token.rule();
 
-        let parser = self.
+      
+        let parser = self.rules.get(&rule);
         
-        self.precedence(Precedence::Assignment)
+
+        if parser.is_none() {
+            panic!("Parser for {:?} not found",token);
+        }
+
+        let parser = parser.unwrap();
+        
+        parser.parse(self,rule)?;
+
+        Ok(())
     }
 
     pub fn number(&mut self) -> Result<(), ()> {
@@ -351,26 +313,26 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn binary(&mut self) -> Result<(), ()> {
-        let op_type = self.get_op_ty()?;
-        self.advance()?;
+        // let op_type = self.get_op_ty()?;
+        // self.advance()?;
 
-        let rule = self.get_rule(op_type).expect("Expected an expression");
+        // let rule = self.get_rule(op_type).expect("Expected an expression");
 
-        self.precedence(rule.precedence.higher());
+        // self.precedence(rule.precedence.higher());
 
-        match op_type {
-            RuleToken::PLUS => self.emit_byte(opcode::ADD),
-            RuleToken::MINUS=> self.emit_byte(opcode::SUB),
-            RuleToken::SLASH=> self.emit_byte(opcode::DIV),
-            RuleToken::STAR=> self.emit_byte(opcode::MUL),
-            ref e => unreachable!("Parsing a binary op and found {:?}", e),
-        }
+        // match op_type {
+        //     RuleToken::PLUS => self.emit_byte(opcode::ADD),
+        //     RuleToken::MINUS=> self.emit_byte(opcode::SUB),
+        //     RuleToken::SLASH=> self.emit_byte(opcode::DIV),
+        //     RuleToken::STAR=> self.emit_byte(opcode::MUL),
+        //     ref e => unreachable!("Parsing a binary op and found {:?}", e),
+        // }
 
         Ok(())
     }
 
     pub fn get_op_ty(&self) -> Result<RuleToken, ()> {
-        match &self.current_token.as_ref().unwrap().value.ty {
+        match self.current()? {
             &TokenType::MINUS => Ok(RuleToken::MINUS),
             &TokenType::BANG => Ok(RuleToken::BANG),
             &TokenType::PLUS => Ok(RuleToken::PLUS),
@@ -380,9 +342,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn get_rule(&self, rtoken:RuleToken ) -> Option<&ParseRule<'a>> {
-        self.rules.get(&rtoken)
-    }
+    
 }
 
 impl Precedence {
@@ -403,58 +363,3 @@ impl Precedence {
 }
 
 
-
-#[derive(Debug)]
-pub struct Grouping;
-
-impl PrefixParser for Grouping {
-    fn parse(&self,compiler:&mut Compiler) -> Result<(),()> {
-        compiler.grouping()?;
-        Ok(())
-    }
-}
-
-
-
-#[derive(Debug)]
-pub struct Binary;
-
-impl PrefixParser for Binary {
-    fn parse(&self,compiler:&mut Compiler) -> Result<(),()> {
-        compiler.binary()?;
-        Ok(())
-    }
-}
-
-
-
-#[derive(Debug)]
-pub struct Unary(pub Precedence);
-
-impl InfixParser for Unary {
-    fn parse(&self,compiler:&mut Compiler) -> Result<(),()> {
-        compiler.unary()?;
-        Ok(())
-    }
-
-    fn precedence(&self) -> Precedence {
-        self.0
-    }
-
-}
-
-
-#[derive(Debug)]
-pub struct LiteralParser(pub Precedence);
-
-impl InfixParser for LiteralParser {
-    fn parse(&self,compiler:&mut Compiler) -> Result<(),()> {
-        compiler.number()?;
-        Ok(())
-    }
-
-    fn precedence(&self) -> Precedence {
-        self.0
-    }
-
-}

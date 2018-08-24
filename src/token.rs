@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 use std::hash::{self, Hash};
 use std::slice::Iter;
 use std::vec::IntoIter;
-use compiler::RuleToken;
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
@@ -172,7 +172,7 @@ impl <'a> TokenType <'a> {
         match *self {
             TokenType::NUMBER(_) => RuleToken::NUMBER,
             TokenType::MINUS => RuleToken::MINUS,
-            _ => unimplemented!()
+            ref e => unimplemented!("{:?}",e)
         }
     }
 }

@@ -88,8 +88,9 @@ fn run_file(path: &str) {
     if let Err(_) = compiler.compile() {
         reporter.emit(&input)
     }
+     println!("{:#?}",compiler);
 
-    println!("{:?}", reporter);
+    // println!("{:?}", reporter);
 }
 
 fn interpret(file: &str) -> VMResult {

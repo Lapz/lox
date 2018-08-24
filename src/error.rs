@@ -109,7 +109,7 @@ pub fn print(input: &str, d: &Diagnostic) {
                 Level::Error => carets,
             };
 
-            let whitespace = repeat_string(" ", span.start.column as usize - 1);
+            let whitespace = repeat_string(" ", span.start.column as usize);
             println!("     {}{}{}", prefix, whitespace, carets);
         } else if line_idx == span.end.line as usize {
             let carets = repeat_string("^", span.end.column as usize);
