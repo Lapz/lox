@@ -47,7 +47,7 @@ impl Reporter {
     pub fn set_end(&mut self, span: Span) {
         self.end = span;
     }
-    
+
     pub fn end(&self) -> Span {
         self.end
     }

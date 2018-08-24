@@ -11,6 +11,7 @@ mod token;
 mod util;
 mod value;
 mod vm;
+mod pratt;
 
 use compiler::Compiler;
 use error::Reporter;
@@ -88,7 +89,7 @@ fn run_file(path: &str) {
         reporter.emit(&input)
     }
 
-    println!("{:?}",reporter);
+    println!("{:?}", reporter);
 }
 
 fn interpret(file: &str) -> VMResult {

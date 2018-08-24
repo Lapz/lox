@@ -1,7 +1,9 @@
 use pos::Spanned;
 use std::fmt::{self, Display};
+use std::hash::{self, Hash};
 use std::slice::Iter;
 use std::vec::IntoIter;
+use compiler::RuleToken;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
@@ -57,6 +59,36 @@ pub enum TokenType<'a> {
     ERROR,
     EOF,
 }
+
+#[derive(Debug,Eq,Hash,PartialEq,Clone,Copy)]
+pub enum RuleToken {
+    LPAREN,
+    DOT,
+    MINUS,
+    PLUS,
+    SLASH,
+    STAR,
+    BANG,
+    BANGEQUAL,
+    EQUAL,
+    EQUALEQUAL,
+    GREATER,
+    GREATEREQUAL,
+    LESS,
+    LESSEQUAL,
+    IDENT,
+    STRING,
+    NUMBER,
+    FALSE,
+    TRUE,
+    THIS,
+    NIL,
+    AND,
+    OR,
+
+}
+
+
 impl<'a> Display for TokenType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -117,5 +149,30 @@ impl<'a> Iterator for TokenIter<'a> {
 
     fn next(&mut self) -> Option<Spanned<Token<'a>>> {
         self.iter.next()
+    }
+}
+
+impl<'a> Eq for TokenType<'a> {}
+
+impl<'a> Hash for TokenType<'a> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        match *self {
+            TokenType::NUMBER(ref float) => {
+                let int = *float as i32;
+                int.hash(state);
+            }
+            ref o => o.hash(state),
+        }
+    }
+}
+
+
+impl <'a> TokenType <'a> {
+    pub fn rule(&self) -> RuleToken {
+        match *self {
+            TokenType::NUMBER(_) => RuleToken::NUMBER,
+            TokenType::MINUS => RuleToken::MINUS,
+            _ => unimplemented!()
+        }
     }
 }

@@ -166,11 +166,11 @@ impl<'a> Lexer<'a> {
 
                 return Err(());
             }
-            Some(_) | None => {
-                
-                (TokenType::NUMBER(int.parse().expect("Coundln't parse the float")), start, end)
-                
-            },
+            Some(_) | None => (
+                TokenType::NUMBER(int.parse().expect("Coundln't parse the float")),
+                start,
+                end,
+            ),
         };
 
         Ok(spans(token, start, end))
@@ -248,8 +248,7 @@ impl<'a> Lexer<'a> {
                         self.line_comment(start);
                         continue;
                     } else if self.peek(|ch| ch == '*') {
-                        if let Err(_) =  self.block_comment(start) {
-                        }
+                        if let Err(_) = self.block_comment(start) {}
                         continue;
                     } else {
                         Ok(span(TokenType::SLASH, start))
@@ -288,7 +287,7 @@ impl<'a> Lexer<'a> {
                 ch => {
                     let msg: String = LexerError::Unexpected(ch, start).into();
                     self.error(msg, start);
-                   
+
                     continue;
                 }
             };
@@ -306,7 +305,7 @@ impl<'a> Lexer<'a> {
                 Err(_) => (),
             }
         }
-        
+
         tokens.push(span(TokenType::EOF, self.end));
 
         tokens.retain(|t| t.value.ty != TokenType::COMMENT);
@@ -404,10 +403,10 @@ impl Display for LexerError {
 }
 
 #[cfg(test)]
-mod test{
+mod test {
     use super::Lexer;
     use error::Reporter;
-    #[test] 
+    #[test]
 
     fn it_work() {
         let source = "-10 a () {} ,.-+;/*!!= ";

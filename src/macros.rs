@@ -21,3 +21,21 @@ macro_rules! eof_error {
         Err(())
     }};
 }
+
+macro_rules! parse_prefix {
+    ($parser:ident,$struct_name:ident,$token:ident) => {{
+        #[derive(Debug)]
+        struct $struct_name;
+
+        {
+            $parser.prefix(&$struct_name, $token);
+        }
+
+        impl PrefixParser for $struct_name {
+            fn parse(&self, compiler: &mut Compiler) -> Result<(), ()> {
+                compiler.grouping()?;
+                Ok(())
+            }
+        }
+    }};
+}
