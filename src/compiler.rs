@@ -33,7 +33,7 @@ pub enum Operator {
     Star,
     Slash,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialOrd, PartialEq)]
 pub enum Precedence {
     None,
     Assignment,
@@ -75,6 +75,7 @@ impl<'a> Compiler<'a> {
         compiler.prefix(RuleToken::NUMBER, &LiteralParselet);
         compiler.prefix(RuleToken::MINUS, &UnaryParser);
         compiler.infix(RuleToken::PLUS, &BinaryParselet(Precedence::Term));
+        compiler.infix(RuleToken::MINUS, &BinaryParselet(Precedence::Term));
 
         compiler
     }
@@ -83,8 +84,7 @@ impl<'a> Compiler<'a> {
         self.prefix.insert(ty, parser);
     }
 
-
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     pub fn disassemble(&self) {
         for chunk in self.chunks.iter() {
             chunk.disassemble("chunk")
@@ -100,7 +100,7 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn compile(&mut self) -> Result<(), ()> {
-        self.expression()?;
+        self.expression(Precedence::Assignment)?;
         self.check(TokenType::EOF, "Expected EOF")?;
         self.end_chunk();
         Ok(())
@@ -212,7 +212,7 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    pub fn expression(&mut self) -> Result<(), ()> {
+    pub fn expression(&mut self, precedence: Precedence) -> Result<(), ()> {
         let token = self.current()?;
         let mut rule = token.rule();
 
@@ -226,27 +226,22 @@ impl<'a> Compiler<'a> {
 
         parser.parse(self)?;
 
-        {
-            let token = self.peek().expect("Expected a token");
+        while precedence < self.get_precedence() {
+            let parser = self.infix.get(&rule);
 
-            rule = token.rule();
+            let parser = if parser.is_some() {
+                parser.unwrap()
+            } else {
+                return Ok(());
+            };
+
+            parser.parse(self)?;
         }
-
-        let parser = self.infix.get(&rule);
-
-        let parser = if parser.is_some() {
-            parser.unwrap()
-        } else {
-            return Ok(());
-        };
-
-        parser.parse(self);
 
         Ok(())
     }
 
-    pub fn get_precedence(&mut self) -> Precedence {
-
+    pub fn get_precedence(&self) -> Precedence {
         let mut rule = None;
         {
             let token = self.peek().expect("Expected a token");
@@ -288,7 +283,7 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn grouping(&mut self) -> Result<(), ()> {
-        self.expression()?;
+        self.expression(Precedence::Assignment)?;
         self.check(TokenType::RPAREN, "Expeceted '(' ")
     }
 

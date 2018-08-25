@@ -41,7 +41,7 @@ impl PrefixParser for UnaryParser {
 
         let op = parser.get_op_ty()?;
         parser.advance().expect("Token Gone");
-        parser.expression()?;
+        parser.expression(Precedence::Unary)?;
 
         match op {
             Operator::Negate => {
@@ -72,7 +72,7 @@ impl InfixParser for BinaryParselet {
 
         parser.advance()?;
 
-        parser.expression()?; // Compile the rhs
+        parser.expression(self.pred().higher())?; // Compile the rhs
 
         match op {
             Operator::Plus => parser.emit_byte(opcode::ADD),
