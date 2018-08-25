@@ -196,8 +196,21 @@ impl<'a> Compiler<'a> {
         let parser = self.prefix.get(&rule);
 
         if parser.is_none() {
-            // self.error(msg: String, span: Span)
-            panic!("Parser for {:?} not found", token);
+
+
+            let token = self.current_token();
+
+            if token.is_none() {
+                return eof_error!(self)
+            }else {
+                let token = token.unwrap();
+                let span = token.span;
+                let msg = format!("Expected an expression instead found `{}` ",token.value.ty);
+                self.reporter.error(msg, span);
+                return Err(())
+            }
+         
+            // panic!("Parser for {:?} not found", token);
         }
 
         let parser = parser.unwrap();
