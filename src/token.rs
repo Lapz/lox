@@ -136,11 +136,6 @@ impl<'a> Display for TokenType<'a> {
     }
 }
 
-impl<'a> Token<'a> {
-    pub fn new(ty: TokenType<'a>) -> Token<'a> {
-        Self { ty }
-    }
-}
 
 impl<'a> Iterator for TokenIter<'a> {
     type Item = Spanned<Token<'a>>;

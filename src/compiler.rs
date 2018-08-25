@@ -5,11 +5,9 @@ use error::Reporter;
 use opcode;
 use pos::{Span, Spanned, EMPTYSPAN};
 use pratt::{BinaryParselet, InfixParser, LiteralParselet, PrefixParser, UnaryParser};
-use scanner::Lexer;
+
 use std::collections::{HashMap, VecDeque};
-use std::fmt::Debug;
-use std::hash::Hash;
-use std::iter::Peekable;
+
 use token::{RuleToken, Token, TokenType};
 use value::Value;
 
@@ -46,13 +44,6 @@ pub enum Precedence {
     Unary,
     Call,
     Primary,
-}
-
-#[derive(Debug)]
-pub struct ParseRule<'a> {
-    prefix: Option<&'a PrefixParser>,
-    infix: Option<&'a InfixParser>,
-    precedence: Precedence,
 }
 
 impl<'a> Compiler<'a> {
@@ -192,33 +183,14 @@ impl<'a> Compiler<'a> {
 
     // ========== PARSING ===========
 
-    pub fn precedence(&mut self, pred: Precedence) -> Result<(), ()> {
-        self.advance()?;
-
-        // let op_type = self.get_op_ty()?;
-
-        // let rule = self.get_rule(op_type).expect("Expected an expression");
-
-        // if let Some(ref prefix)  = rule.prefix {
-        //     prefix.parse(&mut self)?;
-        // }
-
-        // while pred <= self.get_rule(rtoken: RuleToken) {
-
-        // }
-
-        // let parser = self.prefix.get();
-
-        Ok(())
-    }
-
     pub fn expression(&mut self, precedence: Precedence) -> Result<(), ()> {
         let token = self.current()?;
-        let mut rule = token.rule();
+        let rule = token.rule();
 
         let parser = self.prefix.get(&rule);
 
         if parser.is_none() {
+            // self.error(msg: String, span: Span)
             panic!("Parser for {:?} not found", token);
         }
 
@@ -242,14 +214,11 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn get_precedence(&self) -> Precedence {
-        let mut rule = None;
-        {
-            let token = self.peek().expect("Expected a token");
+        let token = self.peek().expect("Expected a token");
 
-            rule = Some(token.rule());
-        }
+        let rule = token.rule();
 
-        let parser = self.infix.get(&rule.unwrap());
+        let parser = self.infix.get(&rule);
 
         let parser = if parser.is_some() {
             parser.unwrap()
@@ -285,39 +254,6 @@ impl<'a> Compiler<'a> {
     pub fn grouping(&mut self) -> Result<(), ()> {
         self.expression(Precedence::Assignment)?;
         self.check(TokenType::RPAREN, "Expeceted '(' ")
-    }
-
-    pub fn unary(&mut self) -> Result<(), ()> {
-        let op_type = self.get_op_ty()?;
-        self.advance()?; // Eat the - or !
-        self.precedence(Precedence::Unary);
-        match op_type {
-            Operator::Negate => {
-                self.emit_byte(opcode::NEGATE);
-                Ok(())
-            }
-
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn binary(&mut self) -> Result<(), ()> {
-        // let op_type = self.get_op_ty()?;
-        // self.advance()?;
-
-        // let rule = self.get_rule(op_type).expect("Expected an expression");
-
-        // self.precedence(rule.precedence.higher());
-
-        // match op_type {
-        //     RuleToken::PLUS => self.emit_byte(opcode::ADD),
-        //     RuleToken::MINUS=> self.emit_byte(opcode::SUB),
-        //     RuleToken::SLASH=> self.emit_byte(opcode::DIV),
-        //     RuleToken::STAR=> self.emit_byte(opcode::MUL),
-        //     ref e => unreachable!("Parsing a binary op and found {:?}", e),
-        // }
-
-        Ok(())
     }
 
     pub fn get_op_ty(&self) -> Result<Operator, ()> {

@@ -25,8 +25,6 @@ use vm::{VMResult, VM};
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    println!("{:?}", args);
-
     match args.len() {
         1 => repl(),
         2 => run_file(&args[1]),
