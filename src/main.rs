@@ -86,7 +86,6 @@ fn run_file(path: &str) {
         println!("{:#?}", compiler);
     }
 
-   
     #[cfg(feature = "debug")]
     compiler.disassemble();
 

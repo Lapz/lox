@@ -1,8 +1,8 @@
-use compiler::{Compiler, Operator, Precedence};
+use compiler::{Compiler, Operator, Precedence, UnaryOperator};
 use op::opcode;
-use std::fmt::Debug;
-use token::{RuleToken, TokenType,Token};
 use pos::Spanned;
+use std::fmt::Debug;
+use token::{RuleToken, Token, TokenType};
 type ParseResult<T> = Result<T, ()>;
 
 pub trait PrefixParser: Debug {
@@ -21,50 +21,47 @@ impl PrefixParser for LiteralParselet {
     fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
         // let token = parser.advance().expect("No Token");
 
-        match parser.current_token() {
-            Some(&Spanned {
+        match parser.current_token()? {
+            &Spanned {
                 value: Token {
-                    ty: TokenType::NUMBER(ref num),
+                    ty: TokenType::Number(ref num),
                 },
                 ..
-            }) => {
+            } => {
                 parser.emit_constant(*num)?;
                 Ok(())
             }
-            Some(ref e) => {
-                let msg = format!("Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ", e.value.ty);
+            ref e => {
+                let msg = format!(
+                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ",
+                    e.value.ty
+                );
                 parser.error(msg, e.span);
                 Err(())
             }
-            None => eof_error!(parser)
         }
-        
-
-        
     }
 }
 
 #[derive(Debug)]
-pub struct UnaryParser;
+pub struct UnaryParselet;
 
-impl PrefixParser for UnaryParser {
+impl PrefixParser for UnaryParselet {
     fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
         // parser.advance()?;
 
-        let op = parser.get_op_ty()?;
+        let op = parser.get_un_op()?;
         parser.advance().expect("Token Gone");
         parser.expression(Precedence::Unary)?;
 
         match op {
-            Operator::Negate => {
+            UnaryOperator::Negate => {
                 parser.emit_byte(opcode::NEGATE);
 
                 Ok(())
             }
 
-            Operator::Bang => Ok(()),
-
-            _ => unreachable!(),
+            UnaryOperator::Bang => Ok(()),
         }
     }
 }
@@ -94,6 +91,20 @@ impl InfixParser for BinaryParselet {
             ref e => unreachable!("Parsing a binary op and found {:?}", e),
         }
 
+        Ok(())
+    }
+}
+
+
+#[derive(Debug)]
+pub struct GroupingParselet;
+
+impl PrefixParser for GroupingParselet {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
+        parser.advance()?; //Eats the (
+        parser.expression(Precedence::Assignment)?;
+        
+        parser.check(TokenType::RParen, "Expected ')'")?;
         Ok(())
     }
 }
