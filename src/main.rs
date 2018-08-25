@@ -82,10 +82,11 @@ fn run_file(path: &str) {
     let mut compiler = Compiler::new(reporter.clone(), tokens);
 
     if let Err(_) = compiler.compile() {
-        reporter.emit(&input)
+        reporter.emit(&input);
+        println!("{:#?}", compiler);
     }
 
-    // println!("{:#?}", compiler);
+   
     #[cfg(feature = "debug")]
     compiler.disassemble();
 

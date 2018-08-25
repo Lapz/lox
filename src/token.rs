@@ -165,6 +165,8 @@ impl<'a> TokenType<'a> {
             TokenType::NUMBER(_) => RuleToken::NUMBER,
             TokenType::MINUS => RuleToken::MINUS,
             TokenType::PLUS => RuleToken::PLUS,
+            TokenType::SLASH => RuleToken::SLASH,
+            TokenType::STAR => RuleToken::STAR,
             TokenType::EOF => RuleToken::EOF,
             ref e => unimplemented!("{:?}", e),
         }

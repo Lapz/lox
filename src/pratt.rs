@@ -1,7 +1,8 @@
 use compiler::{Compiler, Operator, Precedence};
 use op::opcode;
 use std::fmt::Debug;
-use token::{RuleToken, TokenType};
+use token::{RuleToken, TokenType,Token};
+use pos::Spanned;
 type ParseResult<T> = Result<T, ()>;
 
 pub trait PrefixParser: Debug {
@@ -19,16 +20,27 @@ pub struct LiteralParselet;
 impl PrefixParser for LiteralParselet {
     fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
         // let token = parser.advance().expect("No Token");
-        match parser.current()? {
-            &TokenType::NUMBER(ref number) => parser.emit_constant(*number)?,
-            _ => {
-                let msg = format!("Expected a literal");
 
-                // parser.error(msg,token.span);
+        match parser.current_token() {
+            Some(&Spanned {
+                value: Token {
+                    ty: TokenType::NUMBER(ref num),
+                },
+                ..
+            }) => {
+                parser.emit_constant(*num)?;
+                Ok(())
             }
+            Some(ref e) => {
+                let msg = format!("Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ", e.value.ty);
+                parser.error(msg, e.span);
+                Err(())
+            }
+            None => eof_error!(parser)
         }
+        
 
-        Ok(())
+        
     }
 }
 

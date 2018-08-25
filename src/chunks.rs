@@ -105,6 +105,7 @@ impl TryFrom<u8> for OpCode {
             ADD => Ok(OpCode::Add),
             SUB => Ok(OpCode::Sub),
             MUL => Ok(OpCode::Mul),
+            DIV => Ok(OpCode::Div),
             _ => Err(original),
         }
     }

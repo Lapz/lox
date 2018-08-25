@@ -17,7 +17,7 @@ pub struct Compiler<'a> {
     pub chunks: Vec<Chunk>,
     current_token: Option<Spanned<Token<'a>>>,
     tokens: VecDeque<Spanned<Token<'a>>>,
-    reporter: Reporter,
+    pub reporter: Reporter,
     prefix: HashMap<RuleToken, &'a PrefixParser>,
     infix: HashMap<RuleToken, &'a InfixParser>,
     line: u32,
@@ -67,6 +67,8 @@ impl<'a> Compiler<'a> {
         compiler.prefix(RuleToken::MINUS, &UnaryParser);
         compiler.infix(RuleToken::PLUS, &BinaryParselet(Precedence::Term));
         compiler.infix(RuleToken::MINUS, &BinaryParselet(Precedence::Term));
+        compiler.infix(RuleToken::SLASH, &BinaryParselet(Precedence::Factor));
+        compiler.infix(RuleToken::STAR, &BinaryParselet(Precedence::Factor));
 
         compiler
     }
@@ -181,11 +183,15 @@ impl<'a> Compiler<'a> {
         }
     }
 
+    pub fn current_token(&self) -> Option<&Spanned<Token<'a>>> {
+        self.current_token.as_ref()
+    }
+
     // ========== PARSING ===========
 
     pub fn expression(&mut self, precedence: Precedence) -> Result<(), ()> {
         let token = self.current()?;
-        let rule = token.rule();
+        let mut rule = token.rule();
 
         let parser = self.prefix.get(&rule);
 
@@ -198,7 +204,12 @@ impl<'a> Compiler<'a> {
 
         parser.parse(self)?;
 
-        while precedence < self.get_precedence() {
+        while precedence <= self.get_precedence() {
+            {
+                let token = self.peek().expect("Expected a token");
+
+                rule = token.rule();
+            }
             let parser = self.infix.get(&rule);
 
             let parser = if parser.is_some() {
@@ -229,27 +240,7 @@ impl<'a> Compiler<'a> {
         parser.pred()
     }
 
-    pub fn number(&mut self) -> Result<(), ()> {
-        let token = self.current_token.as_ref();
-
-        match &token {
-            Some(&Spanned {
-                value: Token {
-                    ty: TokenType::NUMBER(ref num),
-                },
-                ..
-            }) => {
-                self.emit_constant(*num)?;
-                Ok(())
-            }
-            Some(ref e) => {
-                let msg = format!("Expected `{{int}}` found `{}` ", e.value.ty);
-                self.reporter.error(msg, e.span);
-                Err(())
-            }
-            None => eof_error!(self),
-        }
-    }
+  
 
     pub fn grouping(&mut self) -> Result<(), ()> {
         self.expression(Precedence::Assignment)?;
