@@ -4,7 +4,6 @@ use std::hash::{self, Hash};
 use std::slice::Iter;
 use std::vec::IntoIter;
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
     pub ty: TokenType<'a>,
@@ -60,7 +59,7 @@ pub enum TokenType<'a> {
     EOF,
 }
 
-#[derive(Debug,Eq,Hash,PartialEq,Clone,Copy)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 pub enum RuleToken {
     LPAREN,
     DOT,
@@ -85,9 +84,8 @@ pub enum RuleToken {
     NIL,
     AND,
     OR,
-
+    EOF,
 }
-
 
 impl<'a> Display for TokenType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -166,13 +164,14 @@ impl<'a> Hash for TokenType<'a> {
     }
 }
 
-
-impl <'a> TokenType <'a> {
+impl<'a> TokenType<'a> {
     pub fn rule(&self) -> RuleToken {
         match *self {
             TokenType::NUMBER(_) => RuleToken::NUMBER,
             TokenType::MINUS => RuleToken::MINUS,
-            ref e => unimplemented!("{:?}",e)
+            TokenType::PLUS => RuleToken::PLUS,
+            TokenType::EOF => RuleToken::EOF,
+            ref e => unimplemented!("{:?}", e),
         }
     }
 }

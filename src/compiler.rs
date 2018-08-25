@@ -3,44 +3,37 @@
 use chunks::Chunk;
 use error::Reporter;
 use opcode;
-use pos::{Spanned, EMPTYSPAN,Span};
+use pos::{Span, Spanned, EMPTYSPAN};
+use pratt::{BinaryParselet, InfixParser, LiteralParselet, PrefixParser, UnaryParser};
 use scanner::Lexer;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Debug;
-use std::iter::Peekable;
-use token::{Token, TokenType,RuleToken};
-use value::Value;
 use std::hash::Hash;
-use pratt::{PrefixParser,NameParser,UnaryParser};
+use std::iter::Peekable;
+use token::{RuleToken, Token, TokenType};
+use value::Value;
 
 #[derive(Debug)]
 pub struct Compiler<'a> {
     chunk: Option<Chunk>,
-    chunks: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
     current_token: Option<Spanned<Token<'a>>>,
     tokens: VecDeque<Spanned<Token<'a>>>,
     reporter: Reporter,
-    rules: HashMap<RuleToken, &'a PrefixParser>,
-    infix_parsers: HashMap<TokenType<'a>, &'a InfixParser>,
-    prefix: HashMap<TokenType<'a>, &'a PrefixParser>,
+    prefix: HashMap<RuleToken, &'a PrefixParser>,
+    infix: HashMap<RuleToken, &'a InfixParser>,
     line: u32,
 }
 
-trait InfixParser: Debug {
-    // add code here
-    fn parse(&self,compiler:&mut Compiler) -> Result<(), ()>;
-    fn precedence(&self) -> Precedence;
-}
-
-#[derive(Debug, Clone, Copy,Eq,PartialEq,Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Operator {
     Negate,
     Bang,
-    PLUS,
+    Plus,
     Star,
     Slash,
 }
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Precedence {
     None,
     Assignment,
@@ -54,7 +47,6 @@ pub enum Precedence {
     Call,
     Primary,
 }
-
 
 #[derive(Debug)]
 pub struct ParseRule<'a> {
@@ -74,59 +66,36 @@ impl<'a> Compiler<'a> {
             tokens,
             current_token,
             reporter,
-            infix_parsers: HashMap::new(),
+
             prefix: HashMap::new(),
-            rules: HashMap::new(),
+            infix: HashMap::new(),
             line: 0,
         };
 
-        compiler.prefix(RuleToken::NUMBER,&NameParser);
-        compiler.prefix(RuleToken::MINUS,&UnaryParser);
-
-
-    
-
-        
-/*                     
-
-  ParseRule {None,     None,    PREC_COMPARISON }); // TOKEN_GREATER         
-  ParseRule {None,     None,    PREC_COMPARISON }); // TOKEN_GREATER_EQUAL   
-  ParseRule {None,     None,    PREC_COMPARISON }); // TOKEN_LESS            
-  ParseRule {None,     None,    PREC_COMPARISON }); // TOKEN_LESS_EQUAL      
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_IDENTIFIER      
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_STRING          
-  ParseRule {number,   None,    PREC_NONE });       // TOKEN_NUMBER          
-  ParseRule {None,     None,    PREC_AND });        // TOKEN_AND             
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_CLASS           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_ELSE            
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_FALSE           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_FUN             
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_FOR             
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_IF              
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_NIL             
-  ParseRule {None,     None,    PREC_OR });         // TOKEN_OR              
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_PRINT           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_RETURN          
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_SUPER           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_THIS            
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_TRUE            
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_VAR             
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_WHILE           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_ERROR           
-  ParseRule {None,     None,    PREC_NONE });       // TOKEN_EOF                                                                        
- */
-        // compiler.prefix(&)
-
-        // rules.insert(RuleToken::LPAREN, ParseRule::new(Precedence::Call,Some(&compiler.grouping),None));
+        compiler.prefix(RuleToken::NUMBER, &LiteralParselet);
+        compiler.prefix(RuleToken::MINUS, &UnaryParser);
+        compiler.infix(RuleToken::PLUS, &BinaryParselet(Precedence::Term));
 
         compiler
     }
 
-    pub fn prefix<T: PrefixParser + 'a>(&mut self,ty:RuleToken, parser: &'a T) {
-        self.rules.insert(ty, parser);
+    pub fn prefix<T: PrefixParser + 'a>(&mut self, ty: RuleToken, parser: &'a T) {
+        self.prefix.insert(ty, parser);
     }
 
-    pub fn error(&mut self,msg:String,span:Span) {
+
+    #[cfg(feature="debug")]
+    pub fn disassemble(&self) {
+        for chunk in self.chunks.iter() {
+            chunk.disassemble("chunk")
+        }
+    }
+
+    pub fn infix<T: InfixParser + 'a>(&mut self, ty: RuleToken, parser: &'a T) {
+        self.infix.insert(ty, parser);
+    }
+
+    pub fn error(&mut self, msg: String, span: Span) {
         self.reporter.error(msg, span)
     }
 
@@ -209,19 +178,14 @@ impl<'a> Compiler<'a> {
         self.tokens.front().map(|spanned| &spanned.value.ty)
     }
 
-    pub fn current(&self) -> Result<&TokenType<'a>,()> {
+    pub fn current(&self) -> Result<&TokenType<'a>, ()> {
         let token = self.current_token.as_ref();
 
         match &token {
             Some(&Spanned {
-                value: Token {
-                    ref ty,
-                },
+                value: Token { ref ty },
                 ..
-            }) => {
-                
-                Ok(ty)
-            }
+            }) => Ok(ty),
             None => eof_error!(self),
         }
     }
@@ -230,7 +194,6 @@ impl<'a> Compiler<'a> {
 
     pub fn precedence(&mut self, pred: Precedence) -> Result<(), ()> {
         self.advance()?;
-
 
         // let op_type = self.get_op_ty()?;
 
@@ -244,31 +207,62 @@ impl<'a> Compiler<'a> {
 
         // }
 
-
-        
-
         // let parser = self.prefix.get();
 
-       Ok(())
+        Ok(())
     }
 
     pub fn expression(&mut self) -> Result<(), ()> {
         let token = self.current()?;
-        let rule = token.rule();
+        let mut rule = token.rule();
 
-      
-        let parser = self.rules.get(&rule);
-        
+        let parser = self.prefix.get(&rule);
 
         if parser.is_none() {
-            panic!("Parser for {:?} not found",token);
+            panic!("Parser for {:?} not found", token);
         }
 
         let parser = parser.unwrap();
-        
-        parser.parse(self,rule)?;
+
+        parser.parse(self)?;
+
+        {
+            let token = self.peek().expect("Expected a token");
+
+            rule = token.rule();
+        }
+
+        let parser = self.infix.get(&rule);
+
+        let parser = if parser.is_some() {
+            parser.unwrap()
+        } else {
+            return Ok(());
+        };
+
+        parser.parse(self);
 
         Ok(())
+    }
+
+    pub fn get_precedence(&mut self) -> Precedence {
+
+        let mut rule = None;
+        {
+            let token = self.peek().expect("Expected a token");
+
+            rule = Some(token.rule());
+        }
+
+        let parser = self.infix.get(&rule.unwrap());
+
+        let parser = if parser.is_some() {
+            parser.unwrap()
+        } else {
+            return Precedence::None;
+        };
+
+        parser.pred()
     }
 
     pub fn number(&mut self) -> Result<(), ()> {
@@ -303,7 +297,7 @@ impl<'a> Compiler<'a> {
         self.advance()?; // Eat the - or !
         self.precedence(Precedence::Unary);
         match op_type {
-            RuleToken::MINUS => {
+            Operator::Negate => {
                 self.emit_byte(opcode::NEGATE);
                 Ok(())
             }
@@ -331,18 +325,16 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    pub fn get_op_ty(&self) -> Result<RuleToken, ()> {
+    pub fn get_op_ty(&self) -> Result<Operator, ()> {
         match self.current()? {
-            &TokenType::MINUS => Ok(RuleToken::MINUS),
-            &TokenType::BANG => Ok(RuleToken::BANG),
-            &TokenType::PLUS => Ok(RuleToken::PLUS),
-            &TokenType::STAR => Ok(RuleToken::STAR),
-            &TokenType::SLASH => Ok(RuleToken::SLASH),
+            &TokenType::MINUS => Ok(Operator::Negate),
+            &TokenType::BANG => Ok(Operator::Bang),
+            &TokenType::PLUS => Ok(Operator::Plus),
+            &TokenType::STAR => Ok(Operator::Star),
+            &TokenType::SLASH => Ok(Operator::Slash),
             _ => Err(()),
         }
     }
-
-    
 }
 
 impl Precedence {
@@ -361,5 +353,3 @@ impl Precedence {
         }
     }
 }
-
-

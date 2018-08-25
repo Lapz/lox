@@ -6,12 +6,12 @@ mod compiler;
 mod error;
 mod op;
 mod pos;
+mod pratt;
 mod scanner;
 mod token;
 mod util;
 mod value;
 mod vm;
-mod pratt;
 
 use compiler::Compiler;
 use error::Reporter;
@@ -24,6 +24,8 @@ use vm::{VMResult, VM};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    println!("{:?}", args);
 
     match args.len() {
         1 => repl(),
@@ -39,10 +41,6 @@ fn main() {
     // chunk.write(constant as u8, 123);
     // chunk.write(opcode::NEGATE,123);
     // chunk.write(opcode::RETURN, 123);
-
-    // let mut vm = VM::new(&chunk);
-
-    // vm.interpret();
 }
 
 fn repl() {
@@ -88,9 +86,14 @@ fn run_file(path: &str) {
     if let Err(_) = compiler.compile() {
         reporter.emit(&input)
     }
-     println!("{:#?}",compiler);
 
-    // println!("{:?}", reporter);
+    // println!("{:#?}", compiler);
+    #[cfg(feature = "debug")]
+    compiler.disassemble();
+
+    let mut vm = VM::new(&compiler.chunks[0]);
+
+    vm.interpret();
 }
 
 fn interpret(file: &str) -> VMResult {
