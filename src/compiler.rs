@@ -257,11 +257,6 @@ impl<'a> Compiler<'a> {
         parser.pred()
     }
 
-    pub fn grouping(&mut self) -> Result<(), ()> {
-        self.expression(Precedence::Assignment)?;
-        self.check(TokenType::RParen, "Expeceted ')' ")
-    }
-
     pub fn get_op_ty(&self) -> Result<Operator, ()> {
         match self.current()? {
             &TokenType::Minus => Ok(Operator::Negate),
