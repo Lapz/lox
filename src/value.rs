@@ -1,8 +1,8 @@
-use std::fmt::{self, Debug};
+use std::fmt::{self, Debug,Display};
 
-pub type Value = f32;
+// pub type Value = f32;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ValueType {
     Bool,
     Nil,
@@ -16,43 +16,90 @@ pub union As {
     number: f32,
 }
 
-#[derive(Debug,Clone, Copy)]
-pub struct Val {
+#[derive(Clone, Copy)]
+pub struct Value {
     val: As,
     ty: ValueType,
 }
 
-impl Val {
-    pub fn bool(value: bool) -> Val {
-        Val {
+impl Value {
+    pub fn bool(value: bool) -> Value {
+        Value {
             val: As { boolean: value },
             ty: ValueType::Bool,
         }
     }
 
-    pub fn nil() -> Val {
-        Val {
-            val: As { number:  0.0 },
+    pub fn nil() -> Value {
+        Value {
+            val: As { number: 0.0 },
             ty: ValueType::Nil,
         }
     }
 
-    pub fn number(number: f32) -> Val {
-        Val {
+    pub fn number(number: f32) -> Value {
+        Value {
             val: As { number },
             ty: ValueType::Number,
         }
     }
+
+    pub fn as_bool(&self) -> bool {
+        if self.ty != ValueType::Bool {
+            panic!(
+                "Value is type `{:?}` instead of {:?}",
+                self.ty,
+                ValueType::Bool
+            );
+        }
+
+        unsafe { self.val.boolean }
+    }
+
+    pub fn as_number(&self) -> f32 {
+        if self.ty != ValueType::Number {
+            panic!(
+                "Value is type `{:?}` instead of {:?}",
+                self.ty,
+                ValueType::Bool
+            );
+        }
+
+        unsafe { self.val.number }
+    }
+
+    pub fn is_number(&self) -> bool {
+        self.ty == ValueType::Number
+    }
 }
 
-impl Debug for As {
-    fn fmt(&self, fmt:&mut fmt::Formatter) -> fmt::Result {
-        write!(fmt,"{{")?;
+impl Debug for Value {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Value {{")?;
         unsafe {
-            write!(fmt,"{},",self.boolean)?;
-            write!(fmt," {}",self.number)?;
+            if self.ty == ValueType::Number || self.ty == ValueType::Nil {
+                write!(fmt, "val:{},", self.val.number)?;
+            } else {
+                write!(fmt, "val:{},", self.val.boolean)?;
+            }
         }
-         write!(fmt,"}}")?;
+        write!(fmt, " ty:{:?}", self.ty)?;
+        write!(fmt, "}}")?;
+        Ok(())
+    }
+}
+
+impl Display for Value {
+    fn fmt(&self,fmt:&mut fmt::Formatter) -> fmt::Result {
+        unsafe {
+            if self.ty == ValueType::Number || self.ty == ValueType::Nil {
+                write!(fmt, "{}", self.val.number)?;
+            } else if self.ty == ValueType::Nil {
+                write!(fmt, "nil")?;
+            } else {
+                write!(fmt, "{}", self.val.boolean)?;
+            }
+        }
 
         Ok(())
     }

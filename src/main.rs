@@ -21,7 +21,7 @@ use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use value::Val;
+use value::Value;
 use vm::{VMResult, VM};
 
 fn main() {
@@ -95,12 +95,11 @@ fn run_file(path: &str) {
 
     vm.interpret();
 
-    let b = Val::bool(true);
-    let nil = Val::nil();
-    let num = Val::number(19.0);
+    let b = Value::bool(true);
+    let nil = Value::nil();
+    let num = Value::number(19.0);
 
-
-    println!("{:?},{:?},{:?}",b,nil,num);
+    println!("{},{},{}", b, nil, num);
 }
 
 fn interpret(file: &str) -> VMResult {

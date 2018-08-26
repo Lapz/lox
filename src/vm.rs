@@ -23,7 +23,7 @@ impl<'a> VM<'a> {
             chunk,
             ip: 0,
             stack_top: 1,
-            stack: [0.0; 256],
+            stack: [Value::nil(); 256],
         }
     }
 
@@ -61,8 +61,12 @@ impl<'a> VM<'a> {
                     self.push(constant);
                 }
                 opcode::NEGATE => {
-                    let v = self.pop();
-                    self.push(-v);
+                    if !self.peek(1).is_number() {
+                        return self.runtime_error("Operand must be a number .");
+                    }
+
+                    let v = Value::number(-self.pop().as_number());
+                    self.push(v);
                 }
                 opcode::ADD => binary_op!(+,self),
                 opcode::SUB => binary_op!(-,self),
@@ -71,6 +75,13 @@ impl<'a> VM<'a> {
                 _ => return VMResult::RuntimeError,
             }
         }
+    }
+
+    fn runtime_error(&self,msg:&str)  -> VMResult {
+        let instructon = self.ip - self.chunk.code.len();
+
+        eprintln!("[line {}] error {}:",self.chunk.lines[instructon],msg);
+        VMResult::RuntimeError
     }
 
     fn read_byte(&mut self) -> u8 {
@@ -84,6 +95,10 @@ impl<'a> VM<'a> {
         self.chunk.constants[index]
     }
 
+    fn peek(&self,distance:usize) -> &Value {
+        &self.stack[self.stack_top+distance]
+    }
+
     fn push(&mut self, value: Value) {
         self.stack[self.stack_top] = value;
         self.stack_top += 1;
@@ -95,3 +110,4 @@ impl<'a> VM<'a> {
         self.stack[self.stack_top]
     }
 }
+

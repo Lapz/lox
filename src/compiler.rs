@@ -194,7 +194,7 @@ impl<'a> Compiler<'a> {
 
         let parser = self.prefix.get(&rule);
 
-        if parser.is_none() {
+        let parser = if parser.is_none() {
             let token = self.current_token();
 
             if token.is_none() {
@@ -206,11 +206,9 @@ impl<'a> Compiler<'a> {
                 self.reporter.error(msg, span);
                 return Err(());
             }
-
-            // panic!("Parser for {:?} not found", token);
-        }
-
-        let parser = parser.unwrap();
+        } else {
+            parser.unwrap()
+        };
 
         parser.parse(self)?;
 
@@ -302,7 +300,7 @@ impl PrefixParser for LiteralParselet {
                 },
                 ..
             }) => {
-                parser.emit_constant(*num)?;
+                parser.emit_constant(Value::number(*num))?;
                 Ok(())
             }
             Some(ref e) => {

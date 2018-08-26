@@ -6,10 +6,10 @@ macro_rules! debug {
 macro_rules! binary_op {
     ($op:tt, $_self:ident) => {{
 
-        let b = $_self.pop();
-        let a = $_self.pop();
+        let b = $_self.pop().as_number();
+        let a = $_self.pop().as_number();
 
-        $_self.push(a $op b)
+        $_self.push(Value::number(a $op b))
     }};
 }
 
