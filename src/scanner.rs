@@ -120,7 +120,7 @@ impl<'a> Lexer<'a> {
                 '"' => {
                     let end = next.shift(ch);
 
-                    return Ok(spans(TokenType::STRING(string), start, end));
+                    return Ok(spans(TokenType::String(string), start, end));
                 }
 
                 ch => string.push(ch),
@@ -153,7 +153,7 @@ impl<'a> Lexer<'a> {
                     }
 
                     _ => (
-                        TokenType::NUMBER(float.parse().expect("An invalid float was used")),
+                        TokenType::Number(float.parse().expect("An invalid float was used")),
                         start,
                         end,
                     ),
@@ -167,7 +167,7 @@ impl<'a> Lexer<'a> {
                 return Err(());
             }
             Some(_) | None => (
-                TokenType::NUMBER(int.parse().expect("Coundln't parse the float")),
+                TokenType::Number(int.parse().expect("Coundln't parse the float")),
                 start,
                 end,
             ),
@@ -184,16 +184,16 @@ impl<'a> Lexer<'a> {
     pub fn next(&mut self) -> Result<Spanned<Token<'a>>, ()> {
         while let Some((start, ch)) = self.advance() {
             return match ch {
-                '.' => Ok(span(TokenType::DOT, start)),
+                '.' => Ok(span(TokenType::Dot, start)),
                 // '?' => Ok(span(TokenType::QUESTION, start)),
-                ';' => Ok(span(TokenType::SEMICOLON, start)),
-                '{' => Ok(span(TokenType::LBRACE, start)),
-                '}' => Ok(span(TokenType::RBRACE, start)),
+                ';' => Ok(span(TokenType::Semicolon, start)),
+                '{' => Ok(span(TokenType::LBrace, start)),
+                '}' => Ok(span(TokenType::RBrace, start)),
                 // '[' => Ok(span(TokenType::LBRACKET, start)),
                 // ']' => Ok(span(TokenType::RBRACKET, start)),
-                '(' => Ok(span(TokenType::LPAREN, start)),
-                ')' => Ok(span(TokenType::RPAREN, start)),
-                ',' => Ok(span(TokenType::COMMA, start)),
+                '(' => Ok(span(TokenType::LParen, start)),
+                ')' => Ok(span(TokenType::RParen, start)),
+                ',' => Ok(span(TokenType::Comma, start)),
                 // ':' => Ok(span(TokenType::COLON, start)),
                 // '^' => Ok(span(TokenType::EXPONENTIAL, start)),
                 // '%' => Ok(span(TokenType::MODULO, start)),
@@ -205,14 +205,14 @@ impl<'a> Lexer<'a> {
                 '=' => {
                     if self.peek(|ch| ch == '=') {
                         self.advance();
-                        Ok(spans(TokenType::EQUALEQUAL, start, start.shift('=')))
+                        Ok(spans(TokenType::EqualEqual, start, start.shift('=')))
                     } else {
-                        Ok(span(TokenType::EQUAL, start))
+                        Ok(span(TokenType::Equal, start))
                     }
                 }
 
                 '+' => {
-                    Ok(span(TokenType::PLUS, start))
+                    Ok(span(TokenType::Plus, start))
                     // if self.peek(|ch| ch == '=') {
                     //     self.advance();
                     //     Ok(spans(TokenType::PLUSASSIGN, start, start.shift('=')))
@@ -229,7 +229,7 @@ impl<'a> Lexer<'a> {
                     //     self.advance();
                     //     Ok(spans(TokenType::FRETURN, start, start.shift('>')))
                     // } else {
-                    Ok(span(TokenType::MINUS, start))
+                    Ok(span(TokenType::Minus, start))
                     // }
                 }
 
@@ -238,7 +238,7 @@ impl<'a> Lexer<'a> {
                     //     self.advance();
                     //     Ok(spans(TokenType::STARASSIGN, start, start.shift('=')))
                     // } else {
-                    Ok(span(TokenType::STAR, start))
+                    Ok(span(TokenType::Star, start))
                     // }
                 }
 
@@ -251,33 +251,33 @@ impl<'a> Lexer<'a> {
                         if let Err(_) = self.block_comment(start) {}
                         continue;
                     } else {
-                        Ok(span(TokenType::SLASH, start))
+                        Ok(span(TokenType::Slash, start))
                     }
                 }
 
                 '!' => {
                     if self.peek(|ch| ch == '=') {
                         self.advance();
-                        Ok(spans(TokenType::BANGEQUAL, start, start.shift('=')))
+                        Ok(spans(TokenType::BangEqual, start, start.shift('=')))
                     } else {
-                        Ok(span(TokenType::BANG, start))
+                        Ok(span(TokenType::Bang, start))
                     }
                 }
 
                 '>' => {
                     if self.peek(|ch| ch == '=') {
                         self.advance();
-                        Ok(spans(TokenType::GREATEREQUAL, start, start.shift('=')))
+                        Ok(spans(TokenType::GreaterEqual, start, start.shift('=')))
                     } else {
-                        Ok(span(TokenType::GREATER, start))
+                        Ok(span(TokenType::Greater, start))
                     }
                 }
                 '<' => {
                     if self.peek(|ch| ch == '=') {
                         self.advance();
-                        Ok(spans(TokenType::LESSEQUAL, start, start.shift('=')))
+                        Ok(spans(TokenType::LessEqual, start, start.shift('=')))
                     } else {
-                        Ok(span(TokenType::LESS, start))
+                        Ok(span(TokenType::Less, start))
                     }
                 }
 
@@ -308,7 +308,7 @@ impl<'a> Lexer<'a> {
 
         tokens.push(span(TokenType::EOF, self.end));
 
-        tokens.retain(|t| t.value.ty != TokenType::COMMENT);
+        tokens.retain(|t| t.value.ty != TokenType::Comment);
 
         self.reporter.set_end(Span {
             start: self.end,
@@ -353,30 +353,30 @@ fn token_with_info(ty: TokenType) -> Token {
 fn look_up_identifier(id: &str) -> TokenType {
     match id {
         // Class
-        "class" => TokenType::CLASS,
-        "print" => TokenType::PRINT,
-        "this" => TokenType::THIS,
+        "class" => TokenType::Class,
+        "print" => TokenType::Print,
+        "this" => TokenType::This,
         // Functions and vars
-        "fun" => TokenType::FUN,
-        "var" => TokenType::VAR,
+        "fun" => TokenType::Fun,
+        "var" => TokenType::Var,
         // Control Flow
-        "if" => TokenType::IF,
-        "else" => TokenType::ELSE,
-        "for" => TokenType::FOR,
-        "while" => TokenType::WHILE,
-        "return" => TokenType::RETURN,
+        "if" => TokenType::If,
+        "else" => TokenType::Else,
+        "for" => TokenType::For,
+        "while" => TokenType::While,
+        "return" => TokenType::Return,
         // "break" => TokenType::BREAK,
         // "continue" => TokenType::CONTINUE,
         // "do" => TokenType::DO,
         // Booleans
-        "true" => TokenType::TRUE,
-        "false" => TokenType::FALSE,
-        "or" => TokenType::OR,
-        "and" => TokenType::AND,
-        "nil" => TokenType::NIL,
+        "true" => TokenType::True,
+        "false" => TokenType::False,
+        "or" => TokenType::Or,
+        "and" => TokenType::And,
+        "nil" => TokenType::Nil,
         // "int" => TokenType::IntType,
         // "float" => TokenType::FloatType,
-        _ => TokenType::IDENT(id),
+        _ => TokenType::Ident(id),
     }
 }
 
@@ -399,16 +399,5 @@ impl Display for LexerError {
             LexerError::UnclosedBlockComment => write!(f, "unclosed block comment"),
             LexerError::Unexpected(ref c, ref p) => write!(f, "Unexpected char {} on {}", c, p),
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::Lexer;
-    use error::Reporter;
-    #[test]
-
-    fn it_work() {
-        let source = "-10 a () {} ,.-+;/*!!= ";
     }
 }

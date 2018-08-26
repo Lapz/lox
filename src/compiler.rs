@@ -30,6 +30,11 @@ pub enum Operator {
     Star,
     Slash,
 }
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum UnaryOperator {
+    Negate,
+    Bang,
+}
 #[derive(Debug, Clone, Copy, PartialOrd, PartialEq)]
 pub enum Precedence {
     None,
@@ -62,12 +67,13 @@ impl<'a> Compiler<'a> {
             line: 0,
         };
 
-        compiler.prefix(RuleToken::NUMBER, &LiteralParselet);
-        compiler.prefix(RuleToken::MINUS, &UnaryParser);
-        compiler.infix(RuleToken::PLUS, &BinaryParselet(Precedence::Term));
-        compiler.infix(RuleToken::MINUS, &BinaryParselet(Precedence::Term));
-        compiler.infix(RuleToken::SLASH, &BinaryParselet(Precedence::Factor));
-        compiler.infix(RuleToken::STAR, &BinaryParselet(Precedence::Factor));
+        compiler.prefix(RuleToken::Literal, &LiteralParselet);
+        compiler.prefix(RuleToken::Minus, &UnaryParselet);
+        compiler.prefix(RuleToken::LParen, &GroupingParselet);
+        compiler.infix(RuleToken::Plus, &BinaryParselet(Precedence::Term));
+        compiler.infix(RuleToken::Minus, &BinaryParselet(Precedence::Term));
+        compiler.infix(RuleToken::Slash, &BinaryParselet(Precedence::Factor));
+        compiler.infix(RuleToken::Star, &BinaryParselet(Precedence::Factor));
 
         compiler
     }
@@ -182,8 +188,14 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn current_token(&self) -> Option<&Spanned<Token<'a>>> {
-        self.current_token.as_ref()
+    pub fn current_token(&self) -> Result<&Spanned<Token<'a>>, ()> {
+        let token = self.current_token.as_ref();
+
+        if token.is_none() {
+            eof_error!(self)
+        } else {
+            Ok(token.unwrap())
+        }
     }
 
     // ========== PARSING ===========
@@ -212,6 +224,7 @@ impl<'a> Compiler<'a> {
 
         parser.parse(self)?;
 
+       
         while precedence <= self.get_precedence() {
             {
                 let token = self.peek().expect("Expected a token");
@@ -225,6 +238,7 @@ impl<'a> Compiler<'a> {
             } else {
                 return Ok(());
             };
+            
 
             parser.parse(self)?;
         }
@@ -250,12 +264,25 @@ impl<'a> Compiler<'a> {
 
     pub fn get_op_ty(&self) -> ParseResult<Operator> {
         match self.current()? {
-            &TokenType::MINUS => Ok(Operator::Negate),
-            &TokenType::BANG => Ok(Operator::Bang),
-            &TokenType::PLUS => Ok(Operator::Plus),
-            &TokenType::STAR => Ok(Operator::Star),
-            &TokenType::SLASH => Ok(Operator::Slash),
+            &TokenType::Minus => Ok(Operator::Negate),
+            &TokenType::Bang => Ok(Operator::Bang),
+            &TokenType::Plus => Ok(Operator::Plus),
+            &TokenType::Star => Ok(Operator::Star),
+            &TokenType::Slash => Ok(Operator::Slash),
             _ => Err(()),
+        }
+    }
+
+    pub fn get_un_op(&self) -> Result<UnaryOperator, ()> {
+        match self.current()? {
+            &TokenType::Minus => Ok(UnaryOperator::Negate),
+            &TokenType::Bang => Ok(UnaryOperator::Bang),
+            ref other => {
+                let token = self.current_token()?;
+                self.reporter
+                    .error(format!("Expected `!` or `-` found {}", other), token.span);
+                Err(())
+            }
         }
     }
 }

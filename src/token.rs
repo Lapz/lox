@@ -16,74 +16,70 @@ pub struct TokenIter<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType<'a> {
-    IDENT(&'a str),
-    LPAREN,
-    RPAREN,
-    LBRACE,
-    RBRACE,
-    COMMA,
-    DOT,
-    MINUS,
-    PLUS,
-    SEMICOLON,
-    SLASH,
-    STAR,
-    BANG,
-    BANGEQUAL,
-    EQUAL,
-    EQUALEQUAL,
-    GREATER,
-    GREATEREQUAL,
-    LESS,
-    LESSEQUAL,
-    STRING(String),
-    NUMBER(f32),
-    COMMENT,
-    AND,
-    CLASS,
-    ELSE,
-    FALSE,
-    FUN,
-    FOR,
-    IF,
-    NIL,
-    OR,
-    PRINT,
-    RETURN,
-    SUPER,
-    THIS,
-    TRUE,
-    VAR,
-    WHILE,
-    ERROR,
+    Ident(&'a str),
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Slash,
+    Star,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    String(String),
+    Number(f32),
+    Comment,
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+    Error,
     EOF,
 }
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 pub enum RuleToken {
-    LPAREN,
-    DOT,
-    MINUS,
-    PLUS,
-    SLASH,
-    STAR,
-    BANG,
-    BANGEQUAL,
-    EQUAL,
-    EQUALEQUAL,
-    GREATER,
-    GREATEREQUAL,
-    LESS,
-    LESSEQUAL,
-    IDENT,
-    STRING,
-    NUMBER,
-    FALSE,
-    TRUE,
-    THIS,
-    NIL,
-    AND,
-    OR,
+    LParen,
+    Minus,
+    Plus,
+    Slash,
+    Star,
+    Literal,
+    None,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Ident,
+    This,
+    And,
+    Or,
     EOF,
 }
 
@@ -91,47 +87,47 @@ impl<'a> Display for TokenType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             TokenType::EOF => write!(f, "\0"),
-            TokenType::IDENT(s) => write!(f, "{}", s),
-            TokenType::NUMBER(ref i) => write!(f, "{}", i),
-            TokenType::EQUAL => write!(f, "="),
-            TokenType::PLUS => write!(f, "+"),
-            TokenType::MINUS => write!(f, "-"),
-            TokenType::BANG => write!(f, "!"),
-            TokenType::STAR => write!(f, "*"),
-            TokenType::SLASH => write!(f, "\\"),
-            TokenType::DOT => write!(f, "."),
-            TokenType::LESS => write!(f, "<"),          // <
-            TokenType::GREATER => write!(f, ">"),       // >
-            TokenType::EQUALEQUAL => write!(f, "=="),   // ==
-            TokenType::BANGEQUAL => write!(f, "!="),    // !=
-            TokenType::LESSEQUAL => write!(f, "<="),    // <=
-            TokenType::GREATEREQUAL => write!(f, "=>"), // =>
-            TokenType::STRING(ref s) => write!(f, "{:?}", s),
-            TokenType::COMMA => write!(f, ","),     // ,
-            TokenType::COMMENT => write!(f, "//"),  // //
-            TokenType::SEMICOLON => write!(f, ";"), //
-            TokenType::LPAREN => write!(f, "("),    // (
-            TokenType::RPAREN => write!(f, ")"),    // )
-            TokenType::LBRACE => write!(f, "{{"),   // {
-            TokenType::RBRACE => write!(f, "}}"),   // }
+            TokenType::Ident(s) => write!(f, "{}", s),
+            TokenType::Number(ref i) => write!(f, "{}", i),
+            TokenType::Equal => write!(f, "="),
+            TokenType::Plus => write!(f, "+"),
+            TokenType::Minus => write!(f, "-"),
+            TokenType::Bang => write!(f, "!"),
+            TokenType::Star => write!(f, "*"),
+            TokenType::Slash => write!(f, "\\"),
+            TokenType::Dot => write!(f, "."),
+            TokenType::Less => write!(f, "<"),          // <
+            TokenType::Greater => write!(f, ">"),       // >
+            TokenType::EqualEqual => write!(f, "=="),   // ==
+            TokenType::BangEqual => write!(f, "!="),    // !=
+            TokenType::LessEqual => write!(f, "<="),    // <=
+            TokenType::GreaterEqual => write!(f, "=>"), // =>
+            TokenType::String(ref s) => write!(f, "{:?}", s),
+            TokenType::Comma => write!(f, ","),     // ,
+            TokenType::Comment => write!(f, "//"),  // //
+            TokenType::Semicolon => write!(f, ";"), //
+            TokenType::LParen => write!(f, "("),    // (
+            TokenType::RParen => write!(f, ")"),    // )
+            TokenType::LBrace => write!(f, "{{"),   // {
+            TokenType::RBrace => write!(f, "}}"),   // }
             // Keywords,
-            TokenType::FUN => write!(f, "fun"),
-            TokenType::PRINT => write!(f, "print"),
-            TokenType::VAR => write!(f, "var"),
-            TokenType::IF => write!(f, "if"),
-            TokenType::ELSE => write!(f, "else"),
-            TokenType::RETURN => write!(f, "return"),
-            TokenType::TRUE => write!(f, "true"),
-            TokenType::FALSE => write!(f, "false"),
-            TokenType::THIS => write!(f, "this"),
-            TokenType::CLASS => write!(f, "class"),
-            TokenType::FOR => write!(f, "for"),
-            TokenType::WHILE => write!(f, "while"),
-            TokenType::SUPER => write!(f, "super"),
-            TokenType::ERROR => write!(f, "error"),
-            TokenType::AND => write!(f, "and"),
-            TokenType::OR => write!(f, "or"),
-            TokenType::NIL => write!(f, "nil"),
+            TokenType::Fun => write!(f, "fun"),
+            TokenType::Print => write!(f, "print"),
+            TokenType::Var => write!(f, "var"),
+            TokenType::If => write!(f, "if"),
+            TokenType::Else => write!(f, "else"),
+            TokenType::Return => write!(f, "return"),
+            TokenType::True => write!(f, "true"),
+            TokenType::False => write!(f, "false"),
+            TokenType::This => write!(f, "this"),
+            TokenType::Class => write!(f, "class"),
+            TokenType::For => write!(f, "for"),
+            TokenType::While => write!(f, "while"),
+            TokenType::Super => write!(f, "super"),
+            TokenType::Error => write!(f, "error"),
+            TokenType::And => write!(f, "and"),
+            TokenType::Or => write!(f, "or"),
+            TokenType::Nil => write!(f, "nil"),
         }
     }
 }
@@ -149,7 +145,7 @@ impl<'a> Eq for TokenType<'a> {}
 impl<'a> Hash for TokenType<'a> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         match *self {
-            TokenType::NUMBER(ref float) => {
+            TokenType::Number(ref float) => {
                 let int = *float as i32;
                 int.hash(state);
             }
@@ -161,12 +157,14 @@ impl<'a> Hash for TokenType<'a> {
 impl<'a> TokenType<'a> {
     pub fn rule(&self) -> RuleToken {
         match *self {
-            TokenType::NUMBER(_) => RuleToken::NUMBER,
-            TokenType::MINUS => RuleToken::MINUS,
-            TokenType::PLUS => RuleToken::PLUS,
-            TokenType::SLASH => RuleToken::SLASH,
-            TokenType::STAR => RuleToken::STAR,
-            TokenType::EOF => RuleToken::EOF,
+            TokenType::Number(_) => RuleToken::Literal,
+            TokenType::Minus => RuleToken::Minus,
+            TokenType::Plus => RuleToken::Plus,
+            TokenType::Slash => RuleToken::Slash,
+            TokenType::Star => RuleToken::Star,
+            TokenType::EOF => RuleToken::None,
+            TokenType::LParen => RuleToken::LParen,
+            TokenType::RParen => RuleToken::None,
             ref e => unimplemented!("{:?}", e),
         }
     }
