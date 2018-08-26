@@ -71,8 +71,6 @@ impl<'a> VM<'a> {
                 _ => return VMResult::RuntimeError,
             }
         }
-
-        VMResult::Ok
     }
 
     fn read_byte(&mut self) -> u8 {
@@ -84,10 +82,6 @@ impl<'a> VM<'a> {
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte() as usize;
         self.chunk.constants[index]
-    }
-
-    fn reset_stack(&mut self) {
-        self.stack_top = 0;
     }
 
     fn push(&mut self, value: Value) {

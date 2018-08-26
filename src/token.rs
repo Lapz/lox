@@ -136,7 +136,6 @@ impl<'a> Display for TokenType<'a> {
     }
 }
 
-
 impl<'a> Iterator for TokenIter<'a> {
     type Item = Spanned<Token<'a>>;
 

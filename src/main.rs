@@ -1,16 +1,17 @@
 #![feature(nll)]
 #[macro_use]
+mod value;
+#[macro_use]
 mod macros;
 mod chunks;
 mod compiler;
 mod error;
 mod op;
 mod pos;
-mod pratt;
 mod scanner;
 mod token;
 mod util;
-mod value;
+
 mod vm;
 
 use compiler::Compiler;
@@ -20,6 +21,7 @@ use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
+use value::Val;
 use vm::{VMResult, VM};
 
 fn main() {
@@ -86,13 +88,19 @@ fn run_file(path: &str) {
         println!("{:#?}", compiler);
     }
 
-   
     #[cfg(feature = "debug")]
     compiler.disassemble();
 
     let mut vm = VM::new(&compiler.chunks[0]);
 
     vm.interpret();
+
+    let b = Val::bool(true);
+    let nil = Val::nil();
+    let num = Val::number(19.0);
+
+
+    println!("{:?},{:?},{:?}",b,nil,num);
 }
 
 fn interpret(file: &str) -> VMResult {

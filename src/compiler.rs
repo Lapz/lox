@@ -3,14 +3,13 @@
 use chunks::Chunk;
 use error::Reporter;
 use opcode;
-use pos::{Span, Spanned, EMPTYSPAN};
-use pratt::{BinaryParselet, InfixParser, LiteralParselet, PrefixParser, UnaryParser};
-
+use pos::{Span, Spanned};
 use std::collections::{HashMap, VecDeque};
-
+use std::fmt::Debug;
 use token::{RuleToken, Token, TokenType};
 use value::Value;
 
+type ParseResult<T> = Result<T, ()>;
 #[derive(Debug)]
 pub struct Compiler<'a> {
     chunk: Option<Chunk>,
@@ -92,7 +91,7 @@ impl<'a> Compiler<'a> {
         self.reporter.error(msg, span)
     }
 
-    pub fn compile(&mut self) -> Result<(), ()> {
+    pub fn compile(&mut self) -> ParseResult<()> {
         self.expression(Precedence::Assignment)?;
         self.check(TokenType::EOF, "Expected EOF")?;
         self.end_chunk();
@@ -109,13 +108,13 @@ impl<'a> Compiler<'a> {
         self.emit_byte(byte2);
     }
 
-    pub fn emit_constant(&mut self, constant: Value) -> Result<(), ()> {
+    pub fn emit_constant(&mut self, constant: Value) -> ParseResult<()> {
         let value = self.make_constant(constant)?;
         self.emit_bytes(opcode::CONSTANT, value);
         Ok(())
     }
 
-    pub fn make_constant(&mut self, value: Value) -> Result<u8, ()> {
+    pub fn make_constant(&mut self, value: Value) -> ParseResult<u8> {
         let index = self.chunk.as_mut().unwrap().add_constant(value);
 
         if index > 256 {
@@ -138,7 +137,7 @@ impl<'a> Compiler<'a> {
         self.chunk = Some(Chunk::new());
     }
 
-    pub fn advance(&mut self) -> Result<Spanned<Token<'a>>, ()> {
+    pub fn advance(&mut self) -> ParseResult<Spanned<Token<'a>>> {
         match self.current_token.take() {
             Some(token) => {
                 self.line = token.span.start.line;
@@ -150,7 +149,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn check(&mut self, ty: TokenType<'a>, msg: &str) -> Result<(), ()> {
+    pub fn check(&mut self, ty: TokenType<'a>, msg: &str) -> ParseResult<()> {
         if self.peek() == Some(&ty) {
             self.advance()?;
             Ok(())
@@ -196,20 +195,18 @@ impl<'a> Compiler<'a> {
         let parser = self.prefix.get(&rule);
 
         if parser.is_none() {
-
-
             let token = self.current_token();
 
             if token.is_none() {
-                return eof_error!(self)
-            }else {
+                return eof_error!(self);
+            } else {
                 let token = token.unwrap();
                 let span = token.span;
-                let msg = format!("Expected an expression instead found `{}` ",token.value.ty);
+                let msg = format!("Expected an expression instead found `{}` ", token.value.ty);
                 self.reporter.error(msg, span);
-                return Err(())
+                return Err(());
             }
-         
+
             // panic!("Parser for {:?} not found", token);
         }
 
@@ -253,14 +250,7 @@ impl<'a> Compiler<'a> {
         parser.pred()
     }
 
-  
-
-    pub fn grouping(&mut self) -> Result<(), ()> {
-        self.expression(Precedence::Assignment)?;
-        self.check(TokenType::RPAREN, "Expeceted '(' ")
-    }
-
-    pub fn get_op_ty(&self) -> Result<Operator, ()> {
+    pub fn get_op_ty(&self) -> ParseResult<Operator> {
         match self.current()? {
             &TokenType::MINUS => Ok(Operator::Negate),
             &TokenType::BANG => Ok(Operator::Bang),
@@ -286,5 +276,98 @@ impl Precedence {
             Precedence::Call => Precedence::Primary,
             Precedence::Primary => Precedence::Primary,
         }
+    }
+}
+
+pub trait PrefixParser: Debug {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()>;
+}
+
+pub trait InfixParser: Debug {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()>;
+    fn pred(&self) -> Precedence;
+}
+
+#[derive(Debug)]
+pub struct LiteralParselet;
+
+impl PrefixParser for LiteralParselet {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
+        // let token = parser.advance().expect("No Token");
+
+        match parser.current_token() {
+            Some(&Spanned {
+                value: Token {
+                    ty: TokenType::NUMBER(ref num),
+                },
+                ..
+            }) => {
+                parser.emit_constant(*num)?;
+                Ok(())
+            }
+            Some(ref e) => {
+                let msg = format!(
+                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ",
+                    e.value.ty
+                );
+                parser.error(msg, e.span);
+                Err(())
+            }
+            None => eof_error!(parser),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct UnaryParser;
+
+impl PrefixParser for UnaryParser {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
+        // parser.advance()?;
+
+        let op = parser.get_op_ty()?;
+        parser.advance().expect("Token Gone");
+        parser.expression(Precedence::Unary)?;
+
+        match op {
+            Operator::Negate => {
+                parser.emit_byte(opcode::NEGATE);
+
+                Ok(())
+            }
+
+            Operator::Bang => Ok(()),
+
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct BinaryParselet(pub Precedence);
+
+impl InfixParser for BinaryParselet {
+    fn pred(&self) -> Precedence {
+        self.0
+    }
+
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
+        parser.advance()?;
+
+        let op = parser.get_op_ty()?;
+
+        parser.advance()?;
+
+        parser.expression(self.pred().higher())?; // Compile the rhs
+
+        match op {
+            Operator::Plus => parser.emit_byte(opcode::ADD),
+            Operator::Negate => parser.emit_byte(opcode::SUB),
+            Operator::Slash => parser.emit_byte(opcode::DIV),
+            Operator::Star => parser.emit_byte(opcode::MUL),
+            ref e => unreachable!("Parsing a binary op and found {:?}", e),
+        }
+
+        Ok(())
     }
 }

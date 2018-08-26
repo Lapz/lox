@@ -1,7 +1,6 @@
 use pos::Span;
 use pos::EMPTYSPAN;
 use std::cell::RefCell;
-use std::collections::VecDeque;
 use std::fmt::{self, Display};
 use std::rc::Rc;
 
@@ -19,14 +18,12 @@ pub struct Diagnostic {
 
 #[derive(Debug, PartialEq)]
 pub enum Level {
-    Warn,
     Error,
 }
 
 impl Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Level::Warn => write!(f, "warning"),
             Level::Error => write!(f, "error"),
         }
     }
@@ -52,23 +49,11 @@ impl Reporter {
         self.end
     }
 
-    pub fn remove_error(&mut self) {
-        self.diagnostics.borrow_mut().pop();
-    }
-
     pub fn error<T: Into<String>>(&self, msg: T, span: Span) {
         self.diagnostics.borrow_mut().push(Diagnostic {
             msg: msg.into(),
             span,
             level: Level::Error,
-        })
-    }
-
-    pub fn warn<T: Into<String>>(&self, msg: T, span: Span) {
-        self.diagnostics.borrow_mut().push(Diagnostic {
-            msg: msg.into(),
-            span,
-            level: Level::Warn,
         })
     }
 
@@ -105,7 +90,6 @@ pub fn print(input: &str, d: &Diagnostic) {
             let carets = repeat_string("^", end - span.start.column as usize + 1);
 
             let carets = match d.level {
-                Level::Warn => carets,
                 Level::Error => carets,
             };
 
@@ -114,7 +98,6 @@ pub fn print(input: &str, d: &Diagnostic) {
         } else if line_idx == span.end.line as usize {
             let carets = repeat_string("^", span.end.column as usize);
             let carets = match d.level {
-                Level::Warn => carets,
                 Level::Error => carets,
             };
             println!("     {}{}", prefix, carets);
@@ -124,7 +107,6 @@ pub fn print(input: &str, d: &Diagnostic) {
         {
             let carets = repeat_string("^", line.len());
             let carets = match d.level {
-                Level::Warn => carets,
                 Level::Error => carets,
             };
             println!("     {}{}", prefix, carets);

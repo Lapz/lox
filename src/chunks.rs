@@ -78,6 +78,8 @@ impl Chunk {
             }
         }
     }
+
+    #[cfg(feature = "debug")]
     pub fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant = self.code[offset + 1];
         println!(
@@ -88,6 +90,7 @@ impl Chunk {
     }
 }
 
+#[cfg(feature = "debug")]
 pub fn simple_instruction(name: &str, offset: usize) -> usize {
     println!("{}", name);
     offset + 1
