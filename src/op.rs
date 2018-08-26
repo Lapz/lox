@@ -24,7 +24,7 @@ pub mod opcode {
     pub const MUL: u8 = 0x5;
     pub const DIV: u8 = 0x6;
     pub const NIL: u8 = 0x7;
-    pub const TRUE:u8 = 0x8;
-    pub const FALSE:u8 = 0x9;
+    pub const TRUE: u8 = 0x8;
+    pub const FALSE: u8 = 0x9;
 
 }

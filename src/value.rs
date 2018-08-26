@@ -1,4 +1,4 @@
-use std::fmt::{self, Debug,Display};
+use std::fmt::{self, Debug, Display};
 
 // pub type Value = f32;
 
@@ -90,7 +90,7 @@ impl Debug for Value {
 }
 
 impl Display for Value {
-    fn fmt(&self,fmt:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         unsafe {
             if self.ty == ValueType::Number || self.ty == ValueType::Nil {
                 write!(fmt, "{}", self.val.number)?;

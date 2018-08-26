@@ -77,10 +77,10 @@ impl<'a> VM<'a> {
         }
     }
 
-    fn runtime_error(&self,msg:&str)  -> VMResult {
+    fn runtime_error(&self, msg: &str) -> VMResult {
         let instructon = self.ip - self.chunk.code.len();
 
-        eprintln!("[line {}] error {}:",self.chunk.lines[instructon],msg);
+        eprintln!("[line {}] error {}:", self.chunk.lines[instructon], msg);
         VMResult::RuntimeError
     }
 
@@ -95,8 +95,8 @@ impl<'a> VM<'a> {
         self.chunk.constants[index]
     }
 
-    fn peek(&self,distance:usize) -> &Value {
-        &self.stack[self.stack_top+distance]
+    fn peek(&self, distance: usize) -> &Value {
+        &self.stack[self.stack_top + distance]
     }
 
     fn push(&mut self, value: Value) {
@@ -110,4 +110,3 @@ impl<'a> VM<'a> {
         self.stack[self.stack_top]
     }
 }
-

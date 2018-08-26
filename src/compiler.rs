@@ -188,14 +188,8 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn current_token(&self) -> Result<&Spanned<Token<'a>>, ()> {
-        let token = self.current_token.as_ref();
-
-        if token.is_none() {
-            eof_error!(self)
-        } else {
-            Ok(token.unwrap())
-        }
+    pub fn current_token(&self) -> Option<&Spanned<Token<'a>>> {
+        self.current_token.as_ref()
     }
 
     // ========== PARSING ===========
@@ -224,7 +218,6 @@ impl<'a> Compiler<'a> {
 
         parser.parse(self)?;
 
-       
         while precedence <= self.get_precedence() {
             {
                 let token = self.peek().expect("Expected a token");
@@ -238,7 +231,6 @@ impl<'a> Compiler<'a> {
             } else {
                 return Ok(());
             };
-            
 
             parser.parse(self)?;
         }
@@ -278,7 +270,7 @@ impl<'a> Compiler<'a> {
             &TokenType::Minus => Ok(UnaryOperator::Negate),
             &TokenType::Bang => Ok(UnaryOperator::Bang),
             ref other => {
-                let token = self.current_token()?;
+                let token = self.current_token().unwrap();
                 self.reporter
                     .error(format!("Expected `!` or `-` found {}", other), token.span);
                 Err(())
@@ -323,7 +315,7 @@ impl PrefixParser for LiteralParselet {
         match parser.current_token() {
             Some(&Spanned {
                 value: Token {
-                    ty: TokenType::NUMBER(ref num),
+                    ty: TokenType::Number(ref num),
                 },
                 ..
             }) => {
@@ -344,24 +336,24 @@ impl PrefixParser for LiteralParselet {
 }
 
 #[derive(Debug)]
-pub struct UnaryParser;
+pub struct UnaryParselet;
 
-impl PrefixParser for UnaryParser {
+impl PrefixParser for UnaryParselet {
     fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
         // parser.advance()?;
 
-        let op = parser.get_op_ty()?;
+        let op = parser.get_un_op()?;
         parser.advance().expect("Token Gone");
         parser.expression(Precedence::Unary)?;
 
         match op {
-            Operator::Negate => {
+            UnaryOperator::Negate => {
                 parser.emit_byte(opcode::NEGATE);
 
                 Ok(())
             }
 
-            Operator::Bang => Ok(()),
+            UnaryOperator::Bang => Ok(()),
 
             _ => unreachable!(),
         }
@@ -393,6 +385,19 @@ impl InfixParser for BinaryParselet {
             ref e => unreachable!("Parsing a binary op and found {:?}", e),
         }
 
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct GroupingParselet;
+
+impl PrefixParser for GroupingParselet {
+    fn parse(&self, parser: &mut Compiler) -> ParseResult<()> {
+        parser.advance()?; //Eats the (
+        parser.expression(Precedence::Assignment)?;
+
+        parser.check(TokenType::RParen, "Expected ')'")?;
         Ok(())
     }
 }
