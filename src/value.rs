@@ -71,6 +71,32 @@ impl Value {
     pub fn is_number(&self) -> bool {
         self.ty == ValueType::Number
     }
+
+    pub fn is_bool(&self) -> bool {
+        self.ty == ValueType::Bool
+    }
+
+    pub fn is_nil(&self) -> bool {
+        self.ty == ValueType::Nil
+    }
+
+    pub fn is_falsey(&self) -> bool {
+        self.is_nil() || self.is_bool() && !self.as_bool()
+    }
+
+    pub fn is_equal(&self,other:&Value) -> bool {
+       
+       
+        if self.ty != other.ty {
+            false
+        }else {
+            match self.ty {
+                ValueType::Bool => self.as_bool() == other.as_bool(),
+                ValueType::Nil => true,
+                ValueType::Number => self.as_number() == other.as_number(),
+            }
+        }
+    }
 }
 
 impl Debug for Value {

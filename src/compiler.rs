@@ -25,16 +25,24 @@ pub struct Compiler<'a> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Operator {
     Negate,
-    Bang,
     Plus,
     Star,
     Slash,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
 }
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum UnaryOperator {
     Negate,
     Bang,
 }
+
 #[derive(Debug, Clone, Copy, PartialOrd, PartialEq)]
 pub enum Precedence {
     None,
@@ -69,11 +77,19 @@ impl<'a> Compiler<'a> {
 
         compiler.prefix(RuleToken::Literal, &LiteralParselet);
         compiler.prefix(RuleToken::Minus, &UnaryParselet);
+        compiler.prefix(RuleToken::Bang, &UnaryParselet);
         compiler.prefix(RuleToken::LParen, &GroupingParselet);
+
+        // Infix appers in the middle of an expr
         compiler.infix(RuleToken::Plus, &BinaryParselet(Precedence::Term));
         compiler.infix(RuleToken::Minus, &BinaryParselet(Precedence::Term));
         compiler.infix(RuleToken::Slash, &BinaryParselet(Precedence::Factor));
         compiler.infix(RuleToken::Star, &BinaryParselet(Precedence::Factor));
+        compiler.infix(
+            RuleToken::Comparison,
+            &BinaryParselet(Precedence::Comparison),
+        );
+        compiler.infix(RuleToken::Equality, &BinaryParselet(Precedence::Equality));
 
         compiler
     }
@@ -257,10 +273,16 @@ impl<'a> Compiler<'a> {
     pub fn get_op_ty(&self) -> ParseResult<Operator> {
         match self.current()? {
             &TokenType::Minus => Ok(Operator::Negate),
-            &TokenType::Bang => Ok(Operator::Bang),
             &TokenType::Plus => Ok(Operator::Plus),
             &TokenType::Star => Ok(Operator::Star),
             &TokenType::Slash => Ok(Operator::Slash),
+            &TokenType::Equal => Ok(Operator::Equal),
+            &TokenType::EqualEqual => Ok(Operator::EqualEqual),
+            &TokenType::BangEqual => Ok(Operator::BangEqual),
+            &TokenType::Less => Ok(Operator::Less),
+            &TokenType::Greater => Ok(Operator::Greater),
+            &TokenType::LessEqual => Ok(Operator::LessEqual),
+            &TokenType::GreaterEqual => Ok(Operator::GreaterEqual),
             _ => Err(()),
         }
     }
@@ -322,6 +344,31 @@ impl PrefixParser for LiteralParselet {
                 parser.emit_constant(Value::number(*num))?;
                 Ok(())
             }
+            Some(&Spanned {
+                value: Token {
+                    ty: TokenType::True,
+                },
+                ..
+            }) => {
+                parser.emit_byte(opcode::TRUE);
+                Ok(())
+            }
+            Some(&Spanned {
+                value: Token {
+                    ty: TokenType::False,
+                },
+                ..
+            }) => {
+                parser.emit_byte(opcode::FALSE);
+                Ok(())
+            }
+            Some(&Spanned {
+                value: Token { ty: TokenType::Nil },
+                ..
+            }) => {
+                parser.emit_byte(opcode::NIL);
+                Ok(())
+            }
             Some(ref e) => {
                 let msg = format!(
                     "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ",
@@ -353,9 +400,10 @@ impl PrefixParser for UnaryParselet {
                 Ok(())
             }
 
-            UnaryOperator::Bang => Ok(()),
-
-            _ => unreachable!(),
+            UnaryOperator::Bang => {
+                parser.emit_byte(opcode::NOT);
+                Ok(())
+            }
         }
     }
 }
@@ -382,7 +430,13 @@ impl InfixParser for BinaryParselet {
             Operator::Negate => parser.emit_byte(opcode::SUB),
             Operator::Slash => parser.emit_byte(opcode::DIV),
             Operator::Star => parser.emit_byte(opcode::MUL),
-            ref e => unreachable!("Parsing a binary op and found {:?}", e),
+            Operator::Less => parser.emit_byte(opcode::LESS),
+            Operator::Greater => parser.emit_byte(opcode::GREATER),
+            Operator::BangEqual => parser.emit_bytes(opcode::EQUAL, opcode::NOT),
+            Operator::EqualEqual => parser.emit_byte(opcode::EQUAL),
+            Operator::LessEqual => parser.emit_bytes(opcode::GREATER,opcode::NOT),
+            Operator::GreaterEqual => parser.emit_bytes(opcode::LESS, opcode::NOT),
+            Operator::Equal => parser.emit_byte(opcode::EQUAL)
         }
 
         Ok(())

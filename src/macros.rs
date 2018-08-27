@@ -4,12 +4,16 @@ macro_rules! debug {
 }
 
 macro_rules! binary_op {
-    ($op:tt, $_self:ident) => {{
+    ($method:ident,$op:tt,$return_ty:ident,$_self:ident) => {{
 
-        let b = $_self.pop().as_number();
-        let a = $_self.pop().as_number();
+        if !$_self.peek(1).is_number() || !$_self.peek(2).is_number() {
+            return $_self.runtime_error("Operands must be numbers.")
+        }
 
-        $_self.push(Value::number(a $op b))
+        let b = $_self.pop().$method();
+        let a = $_self.pop().$method();
+
+        $_self.push(Value::$return_ty(a $op b))
     }};
 }
 

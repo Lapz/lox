@@ -88,18 +88,9 @@ fn run_file(path: &str) {
         println!("{:#?}", compiler);
     }
 
-    #[cfg(feature = "debug")]
-    compiler.disassemble();
-
     let mut vm = VM::new(&compiler.chunks[0]);
 
     vm.interpret();
-
-    let b = Value::bool(true);
-    let nil = Value::nil();
-    let num = Value::number(19.0);
-
-    println!("{},{},{}", b, nil, num);
 }
 
 fn interpret(file: &str) -> VMResult {

@@ -33,24 +33,24 @@ impl<'a> VM<'a> {
     }
 
     pub fn run(&mut self) -> VMResult {
-        loop {
-            #[cfg(feature = "debug")]
-            self.chunk.disassemble("test");
+        #[cfg(feature = "debug")]
+        self.chunk.disassemble("test");
 
-            if cfg!(feature = "stack") {
-                println!("[");
+        if cfg!(feature = "stack") {
+            println!("\n[");
 
-                for (i, byte) in self.stack.iter().enumerate() {
-                    if i + 1 == self.stack.len() {
-                        print!("{}", byte);
-                    } else {
-                        print!("{},", byte);
-                    }
+            for (i, byte) in self.stack.iter().enumerate() {
+                if i + 1 == self.stack.len() {
+                    print!("{}", byte);
+                } else {
+                    print!("{},", byte);
                 }
-
-                println!("]");
             }
 
+            println!("\n]");
+        }
+
+        loop {
             match self.read_byte() {
                 opcode::RETURN => {
                     println!("{}", self.pop());
@@ -60,27 +60,43 @@ impl<'a> VM<'a> {
                     let constant = self.read_constant();
                     self.push(constant);
                 }
+                opcode::NIL => self.push(Value::nil()),
+                opcode::TRUE => self.push(Value::bool(true)),
+                opcode::FALSE => self.push(Value::bool(false)),
                 opcode::NEGATE => {
                     if !self.peek(1).is_number() {
-                        return self.runtime_error("Operand must be a number .");
+                        return self.runtime_error("Unary `-` operand must be a number.");
                     }
 
                     let v = Value::number(-self.pop().as_number());
                     self.push(v);
                 }
-                opcode::ADD => binary_op!(+,self),
-                opcode::SUB => binary_op!(-,self),
-                opcode::MUL => binary_op!(*,self),
-                opcode::DIV => binary_op!(/,self),
+                opcode::ADD => binary_op!(as_number,+,number,self),
+                opcode::SUB => binary_op!(as_number,-,number,self),
+                opcode::MUL => binary_op!(as_number,*,number,self),
+                opcode::DIV => binary_op!(as_number,/,number,self),
+                opcode::NOT => {
+                    let value = Value::bool(self.pop().is_falsey());
+                    self.push(value);
+                },
+                opcode::EQUAL => {
+                    let b = self.pop();
+                    let a = self.pop();
+
+                    self.push(Value::bool(a.is_equal(&b)))
+                },
+                opcode::GREATER => binary_op!(as_bool,>,bool,self),
+                opcode::LESS => binary_op!(as_bool,<,bool,self),
                 _ => return VMResult::RuntimeError,
             }
         }
     }
 
     fn runtime_error(&self, msg: &str) -> VMResult {
-        let instructon = self.ip - self.chunk.code.len();
+        let instructon = self.chunk.code.len() - self.ip;
 
-        eprintln!("[line {}] error {}:", self.chunk.lines[instructon], msg);
+        eprintln!("[line {}] error: {}", self.chunk.lines[instructon], msg);
+
         VMResult::RuntimeError
     }
 

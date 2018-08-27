@@ -20,6 +20,13 @@ pub enum OpCode {
     Sub,
     Div,
     Mul,
+    Nil,
+    True,
+    False,
+    Not,
+    Equal,
+    Less,
+    Greater,
 }
 
 impl Chunk {
@@ -72,6 +79,13 @@ impl Chunk {
             Ok(OpCode::Sub) => simple_instruction("OPCODE::SUB", offset),
             Ok(OpCode::Div) => simple_instruction("OPCODE::DIV", offset),
             Ok(OpCode::Mul) => simple_instruction("OPCODE::MUL", offset),
+            Ok(OpCode::Nil) => simple_instruction("OPCODE::NIL", offset),
+            Ok(OpCode::True) => simple_instruction("OPCODE::TRUE", offset),
+            Ok(OpCode::False) => simple_instruction("OPCODE::FALSE", offset),
+            Ok(OpCode::Not) => simple_instruction("OPCODE::NOT", offset),
+            Ok(OpCode::Equal) => simple_instruction("OPCODE::EQUAL", offset),
+            Ok(OpCode::Less) => simple_instruction("OPCODE::LESS", offset),
+            Ok(OpCode::Greater) => simple_instruction("OPCODE:GREATER", offset),
             Err(ref unknown) => {
                 println!("UNKOWN OPCODE {}", unknown);
                 offset + 1
@@ -109,6 +123,13 @@ impl TryFrom<u8> for OpCode {
             SUB => Ok(OpCode::Sub),
             MUL => Ok(OpCode::Mul),
             DIV => Ok(OpCode::Div),
+            NIL => Ok(OpCode::Nil),
+            TRUE => Ok(OpCode::True),
+            FALSE => Ok(OpCode::False),
+            NOT => Ok(OpCode::Not),
+            EQUAL => Ok(OpCode::Equal),
+            LESS => Ok(OpCode::Less),
+            GREATER => Ok(OpCode::Greater),
             _ => Err(original),
         }
     }

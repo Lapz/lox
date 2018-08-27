@@ -1,21 +1,4 @@
-/// Bytecode Operands
-pub enum OpCode {
-    Return,
-    Constant,
-    Negate,
-    Add,
-    Sub,
-    Div,
-    Mul,
-    Nil,
-    True,
-    False,
-}
-
 pub mod opcode {
-    use super::OpCode;
-    use util::TryFrom;
-
     pub const RETURN: u8 = 0x0;
     pub const CONSTANT: u8 = 0x1;
     pub const NEGATE: u8 = 0x2;
@@ -26,5 +9,8 @@ pub mod opcode {
     pub const NIL: u8 = 0x7;
     pub const TRUE: u8 = 0x8;
     pub const FALSE: u8 = 0x9;
-
+    pub const NOT: u8 = 0x10;
+    pub const EQUAL: u8 = 0x11;
+    pub const GREATER: u8 = 0x12;
+    pub const LESS: u8 = 0x13;
 }

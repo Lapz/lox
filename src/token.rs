@@ -55,7 +55,6 @@ pub enum TokenType<'a> {
     True,
     Var,
     While,
-    Error,
     EOF,
 }
 
@@ -69,18 +68,11 @@ pub enum RuleToken {
     Literal,
     None,
     Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-    Ident,
+    Comparison,
+    Equality,
     This,
     And,
     Or,
-    EOF,
 }
 
 impl<'a> Display for TokenType<'a> {
@@ -124,7 +116,6 @@ impl<'a> Display for TokenType<'a> {
             TokenType::For => write!(f, "for"),
             TokenType::While => write!(f, "while"),
             TokenType::Super => write!(f, "super"),
-            TokenType::Error => write!(f, "error"),
             TokenType::And => write!(f, "and"),
             TokenType::Or => write!(f, "or"),
             TokenType::Nil => write!(f, "nil"),
@@ -158,6 +149,8 @@ impl<'a> TokenType<'a> {
     pub fn rule(&self) -> RuleToken {
         match *self {
             TokenType::Number(_) => RuleToken::Literal,
+            TokenType::False => RuleToken::Literal,
+            TokenType::True => RuleToken::Literal,
             TokenType::Minus => RuleToken::Minus,
             TokenType::Plus => RuleToken::Plus,
             TokenType::Slash => RuleToken::Slash,
@@ -165,6 +158,14 @@ impl<'a> TokenType<'a> {
             TokenType::EOF => RuleToken::None,
             TokenType::LParen => RuleToken::LParen,
             TokenType::RParen => RuleToken::None,
+            TokenType::Bang => RuleToken::Bang,
+            TokenType::Less
+            | TokenType::Greater
+            | TokenType::BangEqual
+            | TokenType::LessEqual
+            | TokenType::GreaterEqual => RuleToken::Comparison,
+            TokenType::Equal | TokenType::EqualEqual => RuleToken::Equality,
+            TokenType::Nil => RuleToken::Literal,
             ref e => unimplemented!("{:?}", e),
         }
     }
