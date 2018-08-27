@@ -81,15 +81,6 @@ impl Position {
     }
 }
 
-impl<T> Spanned<T> {
-    pub fn new(value: T, span: Span) -> Self {
-        Spanned { span, value }
-    }
-    pub fn get_span(&self) -> Span {
-        self.span
-    }
-}
-
 impl Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{},{}", self.line, self.column)

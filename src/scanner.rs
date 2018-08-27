@@ -8,7 +8,6 @@ use token::{Token, TokenType};
 pub enum LexerError {
     UnclosedString,
     UnclosedBlockComment,
-    EOF,
     Unexpected(char, Position),
 }
 
@@ -384,7 +383,6 @@ impl Into<String> for LexerError {
     fn into(self) -> String {
         match self {
             LexerError::UnclosedString => "Unclosed string".into(),
-            LexerError::EOF => "Unexpected EOF".into(),
             LexerError::UnclosedBlockComment => "Unclosed block comment".into(),
             LexerError::Unexpected(ref c, _) => format!("Unexpected char '{}' ", c),
         }
@@ -395,7 +393,6 @@ impl Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LexerError::UnclosedString => write!(f, "unclosed string"),
-            LexerError::EOF => write!(f, "Unexpected EOf"),
             LexerError::UnclosedBlockComment => write!(f, "unclosed block comment"),
             LexerError::Unexpected(ref c, ref p) => write!(f, "Unexpected char {} on {}", c, p),
         }

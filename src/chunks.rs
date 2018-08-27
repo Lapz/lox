@@ -1,32 +1,14 @@
-use util::TryFrom;
 use value::Value;
+use op::opcode;
 
 type Line = u32;
 
 #[derive(Debug)]
-/// Awrapper around an array of bytesc
+/// A wrapper around an array of bytes
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<Value>,
     pub lines: Vec<Line>,
-}
-
-/// Bytecode Operands
-pub enum OpCode {
-    Return,
-    Constant,
-    Negate,
-    Add,
-    Sub,
-    Div,
-    Mul,
-    Nil,
-    True,
-    False,
-    Not,
-    Equal,
-    Less,
-    Greater,
 }
 
 impl Chunk {
@@ -71,23 +53,23 @@ impl Chunk {
 
         let instruction = self.code[offset];
 
-        match OpCode::try_from(instruction) {
-            Ok(OpCode::Return) => simple_instruction("OPCODE::RETURN", offset),
-            Ok(OpCode::Constant) => self.constant_instruction("OPCODE::CONSTANT", offset),
-            Ok(OpCode::Negate) => simple_instruction("OPCODE::NEGATE", offset),
-            Ok(OpCode::Add) => simple_instruction("OPCODE::ADD", offset),
-            Ok(OpCode::Sub) => simple_instruction("OPCODE::SUB", offset),
-            Ok(OpCode::Div) => simple_instruction("OPCODE::DIV", offset),
-            Ok(OpCode::Mul) => simple_instruction("OPCODE::MUL", offset),
-            Ok(OpCode::Nil) => simple_instruction("OPCODE::NIL", offset),
-            Ok(OpCode::True) => simple_instruction("OPCODE::TRUE", offset),
-            Ok(OpCode::False) => simple_instruction("OPCODE::FALSE", offset),
-            Ok(OpCode::Not) => simple_instruction("OPCODE::NOT", offset),
-            Ok(OpCode::Equal) => simple_instruction("OPCODE::EQUAL", offset),
-            Ok(OpCode::Less) => simple_instruction("OPCODE::LESS", offset),
-            Ok(OpCode::Greater) => simple_instruction("OPCODE:GREATER", offset),
-            Err(ref unknown) => {
-                println!("UNKOWN OPCODE {}", unknown);
+        match instruction {
+            opcode::RETURN => simple_instruction("OPCODE::RETURN", offset),
+            opcode::CONSTANT => self.constant_instruction("OPCODE::CONSTANT", offset),
+            opcode::NEGATE => simple_instruction("OPCODE::NEGATE", offset),
+            opcode::ADD => simple_instruction("OPCODE::ADD", offset),
+            opcode::SUB => simple_instruction("OPCODE::SUB", offset),
+            opcode::DIV => simple_instruction("OPCODE::DIV", offset),
+            opcode::MUL => simple_instruction("OPCODE::MUL", offset),
+            opcode::NIL => simple_instruction("OPCODE::NIL", offset),
+            opcode::TRUE => simple_instruction("OPCODE::TRUE", offset),
+            opcode::FALSE => simple_instruction("OPCODE::FALSE", offset),
+            opcode::NOT => simple_instruction("OPCODE::NOT", offset),
+            opcode::EQUAL => simple_instruction("OPCODE::EQUAL", offset),
+            opcode::LESS=> simple_instruction("OPCODE::LESS", offset),
+            opcode::GREATER => simple_instruction("OPCODE:GREATER", offset),
+            _ => {
+                println!("UNKOWN OPCODE {}", instruction);
                 offset + 1
             }
         }
@@ -108,29 +90,4 @@ impl Chunk {
 pub fn simple_instruction(name: &str, offset: usize) -> usize {
     println!("{}", name);
     offset + 1
-}
-
-impl TryFrom<u8> for OpCode {
-    type Error = u8;
-
-    fn try_from(original: u8) -> Result<OpCode, Self::Error> {
-        use opcode::*;
-        match original {
-            RETURN => Ok(OpCode::Return),
-            CONSTANT => Ok(OpCode::Constant),
-            NEGATE => Ok(OpCode::Negate),
-            ADD => Ok(OpCode::Add),
-            SUB => Ok(OpCode::Sub),
-            MUL => Ok(OpCode::Mul),
-            DIV => Ok(OpCode::Div),
-            NIL => Ok(OpCode::Nil),
-            TRUE => Ok(OpCode::True),
-            FALSE => Ok(OpCode::False),
-            NOT => Ok(OpCode::Not),
-            EQUAL => Ok(OpCode::Equal),
-            LESS => Ok(OpCode::Less),
-            GREATER => Ok(OpCode::Greater),
-            _ => Err(original),
-        }
-    }
 }

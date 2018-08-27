@@ -10,8 +10,6 @@ mod op;
 mod pos;
 mod scanner;
 mod token;
-mod util;
-
 mod vm;
 
 use compiler::Compiler;
@@ -33,13 +31,6 @@ fn main() {
         _ => println!("Usage: rlox [path]"),
     }
 
-    // let mut chunk = Chunk::new();
-
-    // let constant = chunk.add_constant(1.2);
-    // chunk.write(opcode::CONSTANT, 123);
-    // chunk.write(constant as u8, 123);
-    // chunk.write(opcode::NEGATE,123);
-    // chunk.write(opcode::RETURN, 123);
 }
 
 fn repl() {
@@ -90,8 +81,4 @@ fn run_file(path: &str) {
     let mut vm = VM::new(&compiler.chunks[0]);
 
     vm.interpret();
-}
-
-fn interpret(file: &str) -> VMResult {
-    VMResult::Ok
 }
