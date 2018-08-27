@@ -24,7 +24,8 @@ pub struct Compiler<'a> {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Operator {
-    Negate,
+    Minus,
+
     Plus,
     Star,
     Slash,
@@ -272,7 +273,7 @@ impl<'a> Compiler<'a> {
 
     pub fn get_op_ty(&self) -> ParseResult<Operator> {
         match self.current()? {
-            &TokenType::Minus => Ok(Operator::Negate),
+            &TokenType::Minus => Ok(Operator::Minus),
             &TokenType::Plus => Ok(Operator::Plus),
             &TokenType::Star => Ok(Operator::Star),
             &TokenType::Slash => Ok(Operator::Slash),
@@ -427,16 +428,16 @@ impl InfixParser for BinaryParselet {
 
         match op {
             Operator::Plus => parser.emit_byte(opcode::ADD),
-            Operator::Negate => parser.emit_byte(opcode::SUB),
+            Operator::Minus => parser.emit_byte(opcode::SUB),
             Operator::Slash => parser.emit_byte(opcode::DIV),
             Operator::Star => parser.emit_byte(opcode::MUL),
             Operator::Less => parser.emit_byte(opcode::LESS),
             Operator::Greater => parser.emit_byte(opcode::GREATER),
             Operator::BangEqual => parser.emit_bytes(opcode::EQUAL, opcode::NOT),
             Operator::EqualEqual => parser.emit_byte(opcode::EQUAL),
-            Operator::LessEqual => parser.emit_bytes(opcode::GREATER,opcode::NOT),
+            Operator::LessEqual => parser.emit_bytes(opcode::GREATER, opcode::NOT),
             Operator::GreaterEqual => parser.emit_bytes(opcode::LESS, opcode::NOT),
-            Operator::Equal => parser.emit_byte(opcode::EQUAL)
+            Operator::Equal => parser.emit_byte(opcode::EQUAL),
         }
 
         Ok(())

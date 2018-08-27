@@ -84,12 +84,10 @@ impl Value {
         self.is_nil() || self.is_bool() && !self.as_bool()
     }
 
-    pub fn is_equal(&self,other:&Value) -> bool {
-       
-       
+    pub fn is_equal(&self, other: &Value) -> bool {
         if self.ty != other.ty {
             false
-        }else {
+        } else {
             match self.ty {
                 ValueType::Bool => self.as_bool() == other.as_bool(),
                 ValueType::Nil => true,

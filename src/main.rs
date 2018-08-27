@@ -21,7 +21,6 @@ use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use value::Value;
 use vm::{VMResult, VM};
 
 fn main() {

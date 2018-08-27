@@ -33,24 +33,19 @@ impl<'a> VM<'a> {
     }
 
     pub fn run(&mut self) -> VMResult {
-        #[cfg(feature = "debug")]
-        self.chunk.disassemble("test");
-
-        if cfg!(feature = "stack") {
-            println!("\n[");
-
-            for (i, byte) in self.stack.iter().enumerate() {
-                if i + 1 == self.stack.len() {
-                    print!("{}", byte);
-                } else {
-                    print!("{},", byte);
-                }
-            }
-
-            println!("\n]");
-        }
-
         loop {
+            #[cfg(feature = "debug")]
+            self.chunk.disassemble("test");
+
+            if cfg!(feature = "stack") {
+                for byte in self.stack[1..self.stack_top].iter() {
+
+                    print!("[{}]",byte);
+                    
+                } 
+
+                print!("\n")
+            }
             match self.read_byte() {
                 opcode::RETURN => {
                     println!("{}", self.pop());
@@ -71,22 +66,22 @@ impl<'a> VM<'a> {
                     let v = Value::number(-self.pop().as_number());
                     self.push(v);
                 }
-                opcode::ADD => binary_op!(as_number,+,number,self),
-                opcode::SUB => binary_op!(as_number,-,number,self),
-                opcode::MUL => binary_op!(as_number,*,number,self),
-                opcode::DIV => binary_op!(as_number,/,number,self),
+                opcode::ADD => binary_op!(+,number,self),
+                opcode::SUB => binary_op!(-,number,self),
+                opcode::MUL => binary_op!(*,number,self),
+                opcode::DIV => binary_op!(/,number,self),
                 opcode::NOT => {
                     let value = Value::bool(self.pop().is_falsey());
                     self.push(value);
-                },
+                }
                 opcode::EQUAL => {
                     let b = self.pop();
                     let a = self.pop();
 
                     self.push(Value::bool(a.is_equal(&b)))
-                },
-                opcode::GREATER => binary_op!(as_bool,>,bool,self),
-                opcode::LESS => binary_op!(as_bool,<,bool,self),
+                }
+                opcode::GREATER => binary_op!(>,bool,self),
+                opcode::LESS => binary_op!(<,bool,self),
                 _ => return VMResult::RuntimeError,
             }
         }
@@ -112,7 +107,7 @@ impl<'a> VM<'a> {
     }
 
     fn peek(&self, distance: usize) -> &Value {
-        &self.stack[self.stack_top + distance]
+        &self.stack[self.stack_top-distance]
     }
 
     fn push(&mut self, value: Value) {
