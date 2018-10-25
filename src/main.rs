@@ -1,4 +1,5 @@
 #![feature(nll)]
+extern crate libc;
 #[macro_use]
 mod value;
 #[macro_use]
@@ -6,15 +7,16 @@ mod macros;
 mod chunks;
 mod compiler;
 mod error;
+mod object;
 mod op;
 mod pos;
 mod scanner;
 mod token;
 mod vm;
-mod object;
 
 use compiler::Compiler;
 use error::Reporter;
+use object::StringObject;
 use op::opcode;
 use scanner::Lexer;
 use std::env;
@@ -31,7 +33,6 @@ fn main() {
 
         _ => println!("Usage: rlox [path]"),
     }
-
 }
 
 fn repl() {
@@ -82,4 +83,9 @@ fn run_file(path: &str) {
     let mut vm = VM::new(&compiler.chunks[0]);
 
     vm.interpret();
+
+    println!(
+        "{:?}",
+        StringObject::new("hello world\0".as_ptr() as *const ::libc::c_char, 12)
+    )
 }

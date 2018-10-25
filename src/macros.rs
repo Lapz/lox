@@ -6,14 +6,14 @@ macro_rules! debug {
 macro_rules! binary_op {
     ($op:tt,$return_ty:ident,$_self:ident) => {{
 
-        if !$_self.peek(1).is_number() || !$_self.peek(2).is_number() {            
+        if !$_self.peek(1).is_number() || !$_self.peek(2).is_number() {
             return $_self.runtime_error(&format!("`{}` operands must be numbers.",stringify!($op)))
         }
 
         let b = $_self.pop().as_number();
         let a = $_self.pop().as_number();
 
-        
+
 
         $_self.push(Value::$return_ty(a $op b))
     }};

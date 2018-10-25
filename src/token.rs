@@ -149,6 +149,7 @@ impl<'a> TokenType<'a> {
     pub fn rule(&self) -> RuleToken {
         match *self {
             TokenType::Number(_) => RuleToken::Literal,
+            TokenType::String(_) => RuleToken::Literal,
             TokenType::False => RuleToken::Literal,
             TokenType::True => RuleToken::Literal,
             TokenType::Minus => RuleToken::Minus,

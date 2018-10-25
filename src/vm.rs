@@ -39,10 +39,8 @@ impl<'a> VM<'a> {
 
             if cfg!(feature = "stack") {
                 for byte in self.stack[1..self.stack_top].iter() {
-
-                    print!("[{}]",byte);
-                    
-                } 
+                    print!("[{}]", byte);
+                }
 
                 print!("\n")
             }
@@ -107,7 +105,7 @@ impl<'a> VM<'a> {
     }
 
     fn peek(&self, distance: usize) -> &Value {
-        &self.stack[self.stack_top-distance]
+        &self.stack[self.stack_top - distance]
     }
 
     fn push(&mut self, value: Value) {

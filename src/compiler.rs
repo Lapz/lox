@@ -2,6 +2,8 @@
 // Pretty printing of errors
 use chunks::Chunk;
 use error::Reporter;
+use libc::{c_char, c_void};
+use object::StringObject;
 use opcode;
 use pos::{Span, Spanned};
 use std::collections::{HashMap, VecDeque};
@@ -76,6 +78,7 @@ impl<'a> Compiler<'a> {
             line: 0,
         };
 
+        compiler.prefix(RuleToken::Literal, &LiteralParselet);
         compiler.prefix(RuleToken::Literal, &LiteralParselet);
         compiler.prefix(RuleToken::Minus, &UnaryParselet);
         compiler.prefix(RuleToken::Bang, &UnaryParselet);
@@ -370,9 +373,27 @@ impl PrefixParser for LiteralParselet {
                 parser.emit_byte(opcode::NIL);
                 Ok(())
             }
+
+            Some(&Spanned {
+                value:
+                    Token {
+                        ty: TokenType::String(ref string),
+                    },
+                ..
+            }) => {
+                let mut string = string.clone();
+
+                string.push('\0');
+
+                parser.emit_constant(Value::object(StringObject::new(
+                    string.as_ptr() as *const c_char,
+                    string.len(),
+                )));
+                Ok(())
+            }
             Some(ref e) => {
                 let msg = format!(
-                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ",
+                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}}` or `{{string}}` found `{}` ",
                     e.value.ty
                 );
                 parser.error(msg, e.span);

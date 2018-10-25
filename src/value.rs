@@ -1,10 +1,8 @@
+use libc::{c_char, c_void,strcmp};
+use object::{Object, ObjectType, StringObject};
+use std::ffi::CStr;
 use std::fmt::{self, Debug, Display};
 use std::mem;
-use object::StringObject;
-use std::ffi::CStr;
-
-
-
 
 /// Represents that types that are used in lox
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -12,7 +10,7 @@ pub enum ValueType {
     Bool,
     Nil,
     Number,
-    Object
+    Object,
 }
 
 #[derive(Clone, Copy)]
@@ -21,7 +19,7 @@ pub union As {
     boolean: bool,
     number: f32,
     /// A values whos state is stored on the heap
-    object: *mut usize
+    object: *mut c_void,
 }
 
 #[derive(Clone, Copy)]
@@ -51,11 +49,11 @@ impl Value {
             ty: ValueType::Number,
         }
     }
-    
-    pub fn object(object:*mut usize) -> Value {
+
+    pub fn object(object: *mut c_void) -> Value {
         Value {
-            val: As { object},
-            ty:ValueType::Object
+            val: As { object },
+            ty: ValueType::Object,
         }
     }
 
@@ -83,7 +81,7 @@ impl Value {
         unsafe { self.val.number }
     }
 
-    pub fn as_object(&self) -> *mut usize {  
+    pub fn as_object(&self) -> *mut c_void {
         if self.ty != ValueType::Object {
             panic!(
                 "Value is type `{:?}` instead of {:?}",
@@ -92,29 +90,23 @@ impl Value {
             );
         }
 
-        unsafe {self.val.object}
-        
-        // *self.val.object      
-    }
+        unsafe { self.val.object }
 
+        // *self.val.object
+    }
 
     pub fn as_string(&self) -> &StringObject {
-
         let ptr = self.as_object();
 
-        unsafe {mem::transmute(ptr)}
-
+        unsafe { mem::transmute(ptr) }
     }
     /// Returns a pointer to an array of chars
-    pub fn as_cstring(&self) -> *mut u8 {
-
+    pub fn as_cstring(&self) -> *mut c_char {
         let ptr = self.as_object();
-        let obj:&StringObject = unsafe {mem::transmute(ptr)};
+        let obj: &StringObject = unsafe { mem::transmute(ptr) };
 
         obj.chars
-
     }
-
 
     pub fn is_number(&self) -> bool {
         self.ty == ValueType::Number
@@ -144,7 +136,16 @@ impl Value {
                 ValueType::Bool => self.as_bool() == other.as_bool(),
                 ValueType::Nil => true,
                 ValueType::Number => self.as_number() == other.as_number(),
-                ValueType::Object => self.as_object() == other.as_object()
+                ValueType::Object =>{
+                    let a_string = self.as_string();
+                    let b_string = other.as_string();
+
+                    // Refractor to check if strings
+
+                    unsafe {
+                        a_string.length == b_string.length && strcmp(a_string.chars,b_string.chars) == 0
+                    }
+                },
             }
         }
     }
@@ -156,6 +157,12 @@ impl Debug for Value {
         unsafe {
             if self.ty == ValueType::Number || self.ty == ValueType::Nil {
                 write!(fmt, "val:{},", self.val.number)?;
+            } else if self.ty == ValueType::Object {
+                write!(
+                    fmt,
+                    "{}",
+                    CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                )?;
             } else {
                 write!(fmt, "val:{},", self.val.boolean)?;
             }
@@ -173,6 +180,18 @@ impl Display for Value {
                 write!(fmt, "{}", self.val.number)?;
             } else if self.ty == ValueType::Nil {
                 write!(fmt, "nil")?;
+            } else if self.ty == ValueType::Object {
+                unsafe {
+                    let obj: &Object = mem::transmute(self.as_object());
+
+                    match obj.ty {
+                        ObjectType::String => write!(
+                            fmt,
+                            "{}",
+                            CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                        )?,
+                    }
+                }
             } else {
                 write!(fmt, "{}", self.val.boolean)?;
             }
