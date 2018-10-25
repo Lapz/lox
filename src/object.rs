@@ -28,14 +28,17 @@ impl Object {
         Object { ty }
     }
 
-    pub fn is_string(&self, val: Value) -> bool {
-        self.is_object_type(val, ObjectType::String)
-    }
+    // pub fn is_string(&self, val: Value) -> bool {
+    //     is_object_type(val, ObjectType::String)
+    // }
 
-    pub fn is_object_type(&self, val: Value, ty: ObjectType) -> bool {
-        val.is_object() && self.ty == ty
-    }
+    
 }
+
+// pub fn is_object_type(val: Value, ty: ObjectType) -> bool {
+
+//         val.is_object() && ::std::mem::transmute::<*mut c_void,&Object>(val.as_object()).ty == ty
+// }
 
 impl StringObject {
     /// Create a new string Object with the null char added allready

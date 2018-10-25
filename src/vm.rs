@@ -85,6 +85,16 @@ impl<'a> VM<'a> {
         }
     }
 
+    fn concat(&mut self) {
+        let b = self.pop().as_string();
+        let a = self.pop().as_string();
+
+        let length = a.length + b.length;
+        
+
+
+    }
+
     fn runtime_error(&self, msg: &str) -> VMResult {
         let instructon = self.chunk.code.len() - self.ip;
 

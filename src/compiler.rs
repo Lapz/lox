@@ -388,7 +388,8 @@ impl PrefixParser for LiteralParselet {
                 parser.emit_constant(Value::object(StringObject::new(
                     string.as_ptr() as *const c_char,
                     string.len(),
-                )));
+                )))?;
+                
                 Ok(())
             }
             Some(ref e) => {

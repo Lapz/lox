@@ -128,6 +128,12 @@ impl Value {
         self.ty == ValueType::Object
     }
 
+    pub fn is_string(&self) -> bool {
+        unsafe {
+            self.is_object() && ::std::mem::transmute::<*mut c_void,&Object>(self.as_object()).ty == ObjectType::String
+        }
+    }
+
     pub fn is_equal(&self, other: &Value) -> bool {
         if self.ty != other.ty {
             false
