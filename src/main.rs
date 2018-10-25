@@ -11,6 +11,7 @@ mod pos;
 mod scanner;
 mod token;
 mod vm;
+mod object;
 
 use compiler::Compiler;
 use error::Reporter;

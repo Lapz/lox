@@ -1,12 +1,18 @@
 use std::fmt::{self, Debug, Display};
+use std::mem;
+use object::StringObject;
+use std::ffi::CStr;
 
-// pub type Value = f32;
 
+
+
+/// Represents that types that are used in lox
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ValueType {
     Bool,
     Nil,
     Number,
+    Object
 }
 
 #[derive(Clone, Copy)]
@@ -14,6 +20,8 @@ pub enum ValueType {
 pub union As {
     boolean: bool,
     number: f32,
+    /// A values whos state is stored on the heap
+    object: *mut usize
 }
 
 #[derive(Clone, Copy)]
@@ -43,6 +51,13 @@ impl Value {
             ty: ValueType::Number,
         }
     }
+    
+    pub fn object(object:*mut usize) -> Value {
+        Value {
+            val: As { object},
+            ty:ValueType::Object
+        }
+    }
 
     pub fn as_bool(&self) -> bool {
         if self.ty != ValueType::Bool {
@@ -68,6 +83,39 @@ impl Value {
         unsafe { self.val.number }
     }
 
+    pub fn as_object(&self) -> *mut usize {  
+        if self.ty != ValueType::Object {
+            panic!(
+                "Value is type `{:?}` instead of {:?}",
+                self.ty,
+                ValueType::Object
+            );
+        }
+
+        unsafe {self.val.object}
+        
+        // *self.val.object      
+    }
+
+
+    pub fn as_string(&self) -> &StringObject {
+
+        let ptr = self.as_object();
+
+        unsafe {mem::transmute(ptr)}
+
+    }
+    /// Returns a pointer to an array of chars
+    pub fn as_cstring(&self) -> *mut u8 {
+
+        let ptr = self.as_object();
+        let obj:&StringObject = unsafe {mem::transmute(ptr)};
+
+        obj.chars
+
+    }
+
+
     pub fn is_number(&self) -> bool {
         self.ty == ValueType::Number
     }
@@ -84,6 +132,10 @@ impl Value {
         self.is_nil() || self.is_bool() && !self.as_bool()
     }
 
+    pub fn is_object(&self) -> bool {
+        self.ty == ValueType::Object
+    }
+
     pub fn is_equal(&self, other: &Value) -> bool {
         if self.ty != other.ty {
             false
@@ -92,6 +144,7 @@ impl Value {
                 ValueType::Bool => self.as_bool() == other.as_bool(),
                 ValueType::Nil => true,
                 ValueType::Number => self.as_number() == other.as_number(),
+                ValueType::Object => self.as_object() == other.as_object()
             }
         }
     }
