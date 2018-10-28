@@ -88,10 +88,10 @@ impl Drop for Object {
     fn drop(&mut self) {
         match self.ty {
             ObjectType::String => unsafe {
-                let string: &StringObject = mem::transmute(self); 
+                let mut string: &StringObject = mem::transmute(self); 
                 // Frees the string 
                 free_array!(char, string.chars as *mut c_void, string.length + 1);
-            
+                free!(StringObject,&mut string as *mut _ as *mut c_void);
             },
         }
     }

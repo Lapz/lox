@@ -35,7 +35,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => test_file(),
+        1 => repl(),
         2 => run_file(&args[1]),
 
         _ => println!("Usage: rlox [path]"),
@@ -77,12 +77,13 @@ fn repl() {
             continue;
         }
 
-        let mut vm = VM::new(&compiler.chunks[0]);
+        let mut vm = VM::new(&compiler.chunks[0],compiler.objects);
 
         vm.interpret();
     }
 }
 
+/*
 fn test_file() {
     let mut file =
         File::open("/Users/rowlandsonpratt/Lenard/Rust/lox/src/test.tox").expect("File not found");
@@ -117,10 +118,10 @@ fn test_file() {
         println!("{:#?}", compiler);
     }
 
-    let mut vm = VM::new(&compiler.chunks[0]);
+    let mut vm = VM::new(&compiler.chunks[0],compiler.objects);
 
     vm.interpret();
-}
+}*/
 
 fn run_file(path: &str) {
     let mut file = File::open(path).expect("File not found");
@@ -155,7 +156,7 @@ fn run_file(path: &str) {
         println!("{:#?}", compiler);
     }
 
-    let mut vm = VM::new(&compiler.chunks[0]);
+    let mut vm = VM::new(&compiler.chunks[0],compiler.objects);
 
     vm.interpret();
 }

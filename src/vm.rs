@@ -23,8 +23,8 @@ pub enum VMResult {
 }
 
 impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
-        let objects: RawObject = ptr::null::<Object>() as RawObject;
+    pub fn new(chunk: &'a Chunk,objects:RawObject) -> Self {
+        // let objects: RawObject = ptr::null::<Object>() as RawObject;
         VM {
             chunk,
             ip: 0,

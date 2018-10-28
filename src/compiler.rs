@@ -22,6 +22,9 @@ pub struct Compiler<'a> {
     prefix: HashMap<RuleToken, &'a PrefixParser>,
     infix: HashMap<RuleToken, &'a InfixParser>,
     line: u32,
+    ///  A linked list of all the objects allocated. This
+    /// is passed to the vm so runtime collection can be done
+    pub objects: RawObject,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -72,7 +75,7 @@ impl<'a> Compiler<'a> {
             tokens,
             current_token,
             reporter,
-
+            objects: ::std::ptr::null::<RawObject>() as RawObject,
             prefix: HashMap::new(),
             infix: HashMap::new(),
             line: 0,
@@ -381,16 +384,19 @@ impl PrefixParser for LiteralParselet {
                     },
                 ..
             }) => {
-                use std::ptr;
                 let mut string = string.clone();
 
                 string.push('\0');
 
-                parser.emit_constant(Value::object(StringObject::new(
+                let object = StringObject::new(
                     string.as_ptr() as *const c_char,
                     string.len() - 1, // Users do not need to know about the null byte
-                    ptr::null::<Object>() as RawObject,
-                )))?;
+                    parser.objects,
+                );
+
+                parser.objects = object;
+
+                parser.emit_constant(Value::object(object))?;
 
                 Ok(())
             }
