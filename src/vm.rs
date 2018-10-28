@@ -1,6 +1,6 @@
 use chunks::Chunk;
 use libc::{c_char, c_void, malloc, memcpy};
-use object::{Object, StringObject};
+use object::{Object, StringObject,RawObject};
 use op::opcode;
 use std::ptr;
 use std::mem;
@@ -13,7 +13,7 @@ pub struct VM<'a> {
     stack: [Value; STACK_MAX],
     stack_top: usize,
     ip: usize,
-    objects: *mut Object,
+    objects: RawObject,
 }
 
 pub enum VMResult {
@@ -24,7 +24,7 @@ pub enum VMResult {
 
 impl<'a> VM<'a> {
     pub fn new(chunk: &'a Chunk) -> Self {
-        let objects: *mut Object = ptr::null::<Object>() as *mut Object;
+        let objects: RawObject = ptr::null::<Object>() as RawObject;
         VM {
             chunk,
             ip: 0,
@@ -98,10 +98,10 @@ impl<'a> VM<'a> {
         let a = self.pop();
         let a = a.as_string();
 
-        let length = a.length + b.length+1;
+        let length = a.length + b.length;
 
         unsafe {
-            let buf = malloc((length) * mem::size_of::<char>());
+            let buf = malloc((length+1) * mem::size_of::<char>());
 
             memcpy(buf, a.chars as *mut c_void, a.length);
 
@@ -111,10 +111,8 @@ impl<'a> VM<'a> {
                 b.length,
             );
 
-           ptr::write((buf as *mut c_char).offset(length as isize), b'\0' as i8);
+           ptr::write((buf as *mut c_char).offset((length+1) as isize), b'\0' as i8);
 
-           
-           
             let result = StringObject::from_owned(buf as *mut c_char, length, self.objects);
 
             self.push(Value::object(result));

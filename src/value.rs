@@ -1,5 +1,5 @@
 use libc::{c_char, c_void, strcmp};
-use object::{Object, ObjectType, StringObject};
+use object::{Object, ObjectType, StringObject,RawObject};
 use std::ffi::CStr;
 use std::fmt::{self, Debug, Display};
 use std::mem;
@@ -19,7 +19,7 @@ pub union As {
     boolean: bool,
     number: f32,
     /// A values whos state is stored on the heap
-    object: *mut Object,
+    object: RawObject,
 }
 
 #[derive(Clone, Copy)]
@@ -50,7 +50,7 @@ impl Value {
         }
     }
 
-    pub fn object(object: *mut Object) -> Value {
+    pub fn object(object: RawObject) -> Value {
         Value {
             val: As { object },
             ty: ValueType::Object,
@@ -58,30 +58,32 @@ impl Value {
     }
 
     pub fn as_bool(&self) -> bool {
-        if self.ty != ValueType::Bool {
-            panic!(
-                "Value is type `{:?}` instead of {:?}",
-                self.ty,
-                ValueType::Bool
-            );
-        }
+       debug_assert_eq!(
+            self.ty,
+            ValueType::Bool,
+            "Value is type `{:?}` instead of {:?}",
+            self.ty,
+            ValueType::Bool
+        );
 
         unsafe { self.val.boolean }
     }
 
     pub fn as_number(&self) -> f32 {
-        if self.ty != ValueType::Number {
-            panic!(
-                "Value is type `{:?}` instead of {:?}",
-                self.ty,
-                ValueType::Bool
-            );
-        }
+
+        debug_assert_eq!(
+            self.ty,
+            ValueType::Number,
+            "Value is type `{:?}` instead of {:?}",
+            self.ty,
+            ValueType::Number
+        );
+       
 
         unsafe { self.val.number }
     }
 
-    pub fn as_object(&self) -> *mut Object {
+    pub fn as_object(&self) -> RawObject {
         debug_assert_eq!(
             self.ty,
             ValueType::Object,
@@ -98,6 +100,7 @@ impl Value {
 
         unsafe { mem::transmute(ptr) }
     }
+
     /// Returns a pointer to an array of chars
     pub fn as_cstring(&self) -> *mut c_char {
         let ptr = self.as_object();
@@ -129,7 +132,7 @@ impl Value {
     pub fn is_string(&self) -> bool {
         unsafe {
             self.is_object()
-                && mem::transmute::<*mut Object, &Object>(self.as_object()).ty
+                && mem::transmute::<RawObject, &Object>(self.as_object()).ty
                     == ObjectType::String
         }
     }
@@ -147,6 +150,10 @@ impl Value {
                     let b_string = other.as_string();
 
                     // Refractor to check if strings
+
+
+                    println!("{:?}",a_string);
+                    println!("{:?}",b_string);
 
                     unsafe {
                         // println!("{}",strcmp(a_string.chars, b_string.chars) == 0);
