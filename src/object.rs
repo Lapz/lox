@@ -1,21 +1,23 @@
-use libc::{c_char, c_void, malloc, strcpy};
-
+use libc::{c_char, c_void, free, malloc, realloc, strcpy};
 use std::ops::Deref;
+use std::ptr;
+use util::reallocate;
 use value::Value;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 #[repr(C)]
 pub enum ObjectType {
     String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub struct Object {
     pub ty: ObjectType,
+    pub next: *mut Object,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub struct StringObject {
     pub obj: Object,
@@ -24,44 +26,46 @@ pub struct StringObject {
 }
 
 impl Object {
-    pub fn new(ty: ObjectType) -> Self {
-        Object { ty }
+    pub fn new(ty: ObjectType, next: *mut Object) -> Self {
+        Object { ty, next }
     }
 
-    // pub fn is_string(&self, val: Value) -> bool {
-    //     is_object_type(val, ObjectType::String)
-    // }
-
-    
+  
 }
 
-// pub fn is_object_type(val: Value, ty: ObjectType) -> bool {
 
-//         val.is_object() && ::std::mem::transmute::<*mut c_void,&Object>(val.as_object()).ty == ty
-// }
 
 impl StringObject {
-    /// Create a new string Object with the null char added allready
-    pub fn new(string: *const c_char, length: usize) -> *mut c_void {
+    /// Create a new string Object that dosen't take ownership of the string passed in
+    /// Conserveatly copies the string from the pointer
+    pub fn new(string: *const c_char, length: usize, next: *mut Object) -> *mut Object {
         unsafe {
             // Allocate the memory needed for the string
             // Copy the string to a buffer
-            let mut buf = malloc(length * 4) as *mut c_char;
+            let buf = malloc(length * 4) as *mut c_char;
 
             let chars = strcpy(buf, string) as *mut c_char;
 
             let s = StringObject {
-                obj: Object::new(ObjectType::String),
+                obj: Object::new(ObjectType::String, next),
                 length,
                 chars,
             };
 
-            Box::into_raw(Box::new(s)) as *mut c_void
+            Box::into_raw(Box::new(s.clone())) as *mut Object
+
         }
+    }
 
-        // StringObject {
+    /// Creates a new String Object that takes ownership of the string passed in
+    pub fn from_owned(chars: *const c_char, length: usize, next: *mut Object) -> *mut Object {
+        let s = StringObject {
+            obj: Object::new(ObjectType::String, next),
+            length,
+            chars: chars as *mut c_char,
+        };
 
-        // }
+        Box::into_raw(Box::new(s)) as *mut Object
     }
 }
 
@@ -70,5 +74,17 @@ impl Deref for StringObject {
 
     fn deref(&self) -> &Self::Target {
         &self.obj
+    }
+}
+
+impl Drop for Object {
+    fn drop(&mut self) {
+        match self.ty {
+            ObjectType::String => unsafe {
+                let string: &StringObject = ::std::mem::transmute(self);
+                free_array!(char, string.chars as *mut c_void, string.length + 1);
+                ::std::mem::drop(string.length);
+            },
+        }
     }
 }

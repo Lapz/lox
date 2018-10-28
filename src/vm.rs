@@ -1,5 +1,8 @@
 use chunks::Chunk;
+use libc::{c_char, c_void, malloc, memcpy};
+use object::{Object, StringObject};
 use op::opcode;
+use std::ptr;
 use value::Value;
 
 const STACK_MAX: usize = 256;
@@ -9,6 +12,7 @@ pub struct VM<'a> {
     stack: [Value; STACK_MAX],
     stack_top: usize,
     ip: usize,
+    objects: *mut Object,
 }
 
 pub enum VMResult {
@@ -19,11 +23,13 @@ pub enum VMResult {
 
 impl<'a> VM<'a> {
     pub fn new(chunk: &'a Chunk) -> Self {
+        let objects: *mut Object = ptr::null::<Object>() as *mut Object;
         VM {
             chunk,
             ip: 0,
             stack_top: 1,
             stack: [Value::nil(); 256],
+            objects,
         }
     }
 
@@ -86,13 +92,38 @@ impl<'a> VM<'a> {
     }
 
     fn concat(&mut self) {
-        let b = self.pop().as_string();
-        let a = self.pop().as_string();
+        let b = self.pop();
+        let b = b.as_string();
+        let a = self.pop();
+        let a = a.as_string();
 
         let length = a.length + b.length;
-        
 
+        unsafe {
+            let buf = malloc((length + 1) * 4);
 
+            memcpy(buf, a.chars as *mut c_void, a.length);
+
+            memcpy(
+                (buf as *const c_void).offset(a.length as isize) as *mut c_void,
+                b.chars as *mut c_void,
+                b.length,
+            );
+
+            // ::std::ptr::write_bytes(buf, b'\0', 1);
+
+            // buf.write("\0".as_ptr() as c_void,);
+
+            // memcpy(
+            //     (buf as *const c_void).offset((length) as isize) as *mut c_void,
+            //     "\0".as_ptr() as *mut c_void,
+            //     4,
+            // );
+
+            let result = StringObject::from_owned(buf as *mut c_char, length, self.objects);
+
+            self.push(Value::object(result));
+        }
     }
 
     fn runtime_error(&self, msg: &str) -> VMResult {
@@ -127,5 +158,19 @@ impl<'a> VM<'a> {
         self.stack_top -= 1;
 
         self.stack[self.stack_top]
+    }
+}
+
+impl<'a> Drop for VM<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            let mut object: Option<&Object> = ::std::mem::transmute(self.objects);
+
+            while object.is_some() {
+                let next: &Object = ::std::mem::transmute(object.unwrap().next);
+                ::std::mem::drop(next);
+                object = Some(next);
+            }
+        }
     }
 }
