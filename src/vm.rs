@@ -3,6 +3,7 @@ use libc::{c_char, c_void, malloc, memcpy};
 use object::{Object, StringObject};
 use op::opcode;
 use std::ptr;
+use std::mem;
 use value::Value;
 
 const STACK_MAX: usize = 256;
@@ -97,29 +98,23 @@ impl<'a> VM<'a> {
         let a = self.pop();
         let a = a.as_string();
 
-        let length = a.length + b.length;
+        let length = a.length + b.length+1;
 
         unsafe {
-            let buf = malloc((length + 1) * 4);
+            let buf = malloc((length) * mem::size_of::<char>());
 
             memcpy(buf, a.chars as *mut c_void, a.length);
 
             memcpy(
-                (buf as *const c_void).offset(a.length as isize) as *mut c_void,
+                (buf as *mut c_char).offset(a.length as isize) as *mut c_void,
                 b.chars as *mut c_void,
                 b.length,
             );
 
-            // ::std::ptr::write_bytes(buf, b'\0', 1);
+           ptr::write((buf as *mut c_char).offset(length as isize), b'\0' as i8);
 
-            // buf.write("\0".as_ptr() as c_void,);
-
-            // memcpy(
-            //     (buf as *const c_void).offset((length) as isize) as *mut c_void,
-            //     "\0".as_ptr() as *mut c_void,
-            //     4,
-            // );
-
+           
+           
             let result = StringObject::from_owned(buf as *mut c_char, length, self.objects);
 
             self.push(Value::object(result));
@@ -164,11 +159,11 @@ impl<'a> VM<'a> {
 impl<'a> Drop for VM<'a> {
     fn drop(&mut self) {
         unsafe {
-            let mut object: Option<&Object> = ::std::mem::transmute(self.objects);
+            let mut object: Option<&Object> = mem::transmute(self.objects);
 
             while object.is_some() {
-                let next: &Object = ::std::mem::transmute(object.unwrap().next);
-                ::std::mem::drop(next);
+                let next: &Object = mem::transmute(object.unwrap().next);
+                mem::drop(next);
                 object = Some(next);
             }
         }

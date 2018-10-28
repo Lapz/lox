@@ -1,8 +1,8 @@
-use libc::{c_char, c_void, free, malloc, realloc, strcpy};
+use libc::{c_char, c_void,malloc, strcpy};
 use std::ops::Deref;
-use std::ptr;
+use std::mem;
 use util::reallocate;
-use value::Value;
+
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 #[repr(C)]
@@ -46,13 +46,17 @@ impl StringObject {
 
             let chars = strcpy(buf, string) as *mut c_char;
 
+            
+
             let s = StringObject {
                 obj: Object::new(ObjectType::String, next),
                 length,
                 chars,
             };
 
-            Box::into_raw(Box::new(s.clone())) as *mut Object
+            
+
+            Box::into_raw(Box::new(s)) as *mut Object
 
         }
     }
@@ -81,9 +85,10 @@ impl Drop for Object {
     fn drop(&mut self) {
         match self.ty {
             ObjectType::String => unsafe {
-                let string: &StringObject = ::std::mem::transmute(self);
+                let string: &StringObject = mem::transmute(self); 
+                // Frees the string 
                 free_array!(char, string.chars as *mut c_void, string.length + 1);
-                ::std::mem::drop(string.length);
+            
             },
         }
     }

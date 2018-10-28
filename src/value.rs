@@ -129,7 +129,7 @@ impl Value {
     pub fn is_string(&self) -> bool {
         unsafe {
             self.is_object()
-                && ::std::mem::transmute::<*mut Object, &Object>(self.as_object()).ty
+                && mem::transmute::<*mut Object, &Object>(self.as_object()).ty
                     == ObjectType::String
         }
     }
