@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["rowlandsonpratt <striderman34@gmail.com>"]
 
 [dependencies]
-
+libc = "*"
 
 [features]
 debug = []

@@ -1,5 +1,9 @@
 use chunks::Chunk;
+use libc::{c_char, c_void, malloc, memcpy};
+use object::{Object, StringObject,RawObject};
 use op::opcode;
+use std::ptr;
+use std::mem;
 use value::Value;
 
 const STACK_MAX: usize = 256;
@@ -9,6 +13,7 @@ pub struct VM<'a> {
     stack: [Value; STACK_MAX],
     stack_top: usize,
     ip: usize,
+    objects: RawObject,
 }
 
 pub enum VMResult {
@@ -18,12 +23,14 @@ pub enum VMResult {
 }
 
 impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
+    pub fn new(chunk: &'a Chunk,objects:RawObject) -> Self {
+        // let objects: RawObject = ptr::null::<Object>() as RawObject;
         VM {
             chunk,
             ip: 0,
             stack_top: 1,
             stack: [Value::nil(); 256],
+            objects,
         }
     }
 
@@ -39,10 +46,8 @@ impl<'a> VM<'a> {
 
             if cfg!(feature = "stack") {
                 for byte in self.stack[1..self.stack_top].iter() {
-
-                    print!("[{}]",byte);
-                    
-                } 
+                    print!("[{}]", byte);
+                }
 
                 print!("\n")
             }
@@ -87,6 +92,33 @@ impl<'a> VM<'a> {
         }
     }
 
+    fn concat(&mut self) {
+        let b = self.pop();
+        let b = b.as_string();
+        let a = self.pop();
+        let a = a.as_string();
+
+        let length = a.length + b.length;
+
+        unsafe {
+            let buf = malloc((length+1) * mem::size_of::<char>());
+
+            memcpy(buf, a.chars as *mut c_void, a.length);
+
+            memcpy(
+                (buf as *mut c_char).offset(a.length as isize) as *mut c_void,
+                b.chars as *mut c_void,
+                b.length,
+            );
+
+           ptr::write((buf as *mut c_char).offset((length+1) as isize), b'\0' as i8);
+
+            let result = StringObject::from_owned(buf as *mut c_char, length, self.objects);
+
+            self.push(Value::object(result));
+        }
+    }
+
     fn runtime_error(&self, msg: &str) -> VMResult {
         let instructon = self.chunk.code.len() - self.ip;
 
@@ -107,7 +139,7 @@ impl<'a> VM<'a> {
     }
 
     fn peek(&self, distance: usize) -> &Value {
-        &self.stack[self.stack_top-distance]
+        &self.stack[self.stack_top - distance]
     }
 
     fn push(&mut self, value: Value) {
@@ -119,5 +151,19 @@ impl<'a> VM<'a> {
         self.stack_top -= 1;
 
         self.stack[self.stack_top]
+    }
+}
+
+impl<'a> Drop for VM<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            let mut object: Option<&Object> = mem::transmute(self.objects);
+
+            while object.is_some() {
+                let next: &Object = mem::transmute(object.unwrap().next);
+                mem::drop(next);
+                object = Some(next);
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
-use value::Value;
 use op::opcode;
+use value::Value;
 
 type Line = u32;
 
@@ -66,7 +66,7 @@ impl Chunk {
             opcode::FALSE => simple_instruction("OPCODE::FALSE", offset),
             opcode::NOT => simple_instruction("OPCODE::NOT", offset),
             opcode::EQUAL => simple_instruction("OPCODE::EQUAL", offset),
-            opcode::LESS=> simple_instruction("OPCODE::LESS", offset),
+            opcode::LESS => simple_instruction("OPCODE::LESS", offset),
             opcode::GREATER => simple_instruction("OPCODE:GREATER", offset),
             _ => {
                 println!("UNKOWN OPCODE {}", instruction);

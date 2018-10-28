@@ -2,6 +2,8 @@
 // Pretty printing of errors
 use chunks::Chunk;
 use error::Reporter;
+use libc::{c_char, c_void};
+use object::{Object, StringObject,RawObject};
 use opcode;
 use pos::{Span, Spanned};
 use std::collections::{HashMap, VecDeque};
@@ -20,6 +22,9 @@ pub struct Compiler<'a> {
     prefix: HashMap<RuleToken, &'a PrefixParser>,
     infix: HashMap<RuleToken, &'a InfixParser>,
     line: u32,
+    ///  A linked list of all the objects allocated. This
+    /// is passed to the vm so runtime collection can be done
+    pub objects: RawObject,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -70,12 +75,13 @@ impl<'a> Compiler<'a> {
             tokens,
             current_token,
             reporter,
-
+            objects: ::std::ptr::null::<RawObject>() as RawObject,
             prefix: HashMap::new(),
             infix: HashMap::new(),
             line: 0,
         };
 
+        compiler.prefix(RuleToken::Literal, &LiteralParselet);
         compiler.prefix(RuleToken::Literal, &LiteralParselet);
         compiler.prefix(RuleToken::Minus, &UnaryParselet);
         compiler.prefix(RuleToken::Bang, &UnaryParselet);
@@ -370,9 +376,33 @@ impl PrefixParser for LiteralParselet {
                 parser.emit_byte(opcode::NIL);
                 Ok(())
             }
+
+            Some(&Spanned {
+                value:
+                    Token {
+                        ty: TokenType::String(ref string),
+                    },
+                ..
+            }) => {
+                let mut string = string.clone();
+
+                string.push('\0');
+
+                let object = StringObject::new(
+                    string.as_ptr() as *const c_char,
+                    string.len() - 1, // Users do not need to know about the null byte
+                    parser.objects,
+                );
+
+                parser.objects = object;
+
+                parser.emit_constant(Value::object(object))?;
+
+                Ok(())
+            }
             Some(ref e) => {
                 let msg = format!(
-                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}} found `{}` ",
+                    "Expected `{{int}}` or `{{nil}}` or `{{true|false}}` or `{{ident}}` or `{{string}}` found `{}` ",
                     e.value.ty
                 );
                 parser.error(msg, e.span);
