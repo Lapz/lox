@@ -112,17 +112,19 @@ impl<'a> Lexer<'a> {
     }
 
     fn string_literal(&mut self, start: Position) -> Result<Spanned<Token<'a>>, ()> {
-       
-
         while let Some((next, ch)) = self.advance() {
             match ch {
                 '"' => {
                     let end = next.shift(ch);
                     // use next to include the end " and shift start to not include the first "
-                    return Ok(spans(TokenType::String(self.slice(start.shift('"'),next)), start, end));
+                    return Ok(spans(
+                        TokenType::String(self.slice(start.shift('"'), next)),
+                        start,
+                        end,
+                    ));
                 }
 
-                _=> (),
+                _ => (),
             }
         }
 

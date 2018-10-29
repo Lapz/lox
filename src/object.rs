@@ -42,7 +42,7 @@ impl Object {
 impl<'a> StringObject<'a> {
     /// Create a new string Object that dosen't take ownership of the string passed in
     /// Conserveatly copies the string from the pointer
-    pub fn new(string: &'a str,next: RawObject) -> RawObject {
+    pub fn new(string: &'a str, next: RawObject) -> RawObject {
         let s = StringObject {
             obj: Object::new(ObjectType::String, next),
             chars: ObjectValue::Str(string),
@@ -52,7 +52,7 @@ impl<'a> StringObject<'a> {
     }
 
     /// Creates a new String Object that takes ownership of the string passed in
-    pub fn from_owned(chars: String,next: RawObject) -> RawObject {
+    pub fn from_owned(chars: String, next: RawObject) -> RawObject {
         let s = StringObject {
             obj: Object::new(ObjectType::String, next),
             chars: ObjectValue::String(chars),
@@ -62,18 +62,16 @@ impl<'a> StringObject<'a> {
     }
 }
 
-
-impl <'a> ObjectValue<'a> {
-
+impl<'a> ObjectValue<'a> {
     pub fn string(&self) -> &str {
         match *self {
             ObjectValue::Str(ref string) => string,
-            ObjectValue::String(ref string) => string, 
+            ObjectValue::String(ref string) => string,
         }
     }
 }
 
-impl <'a> Deref for StringObject<'a> {
+impl<'a> Deref for StringObject<'a> {
     type Target = Object;
 
     fn deref(&self) -> &Self::Target {
@@ -95,10 +93,10 @@ impl <'a> Deref for StringObject<'a> {
 // }
 
 impl<'a> Display for ObjectValue<'a> {
-    fn fmt(&self,f:&mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ObjectValue::Str(ref string) => write!(f,"'static: {}",string)?,
-            ObjectValue::String(ref string) => write!(f,"new: {}",string)?,
+            ObjectValue::Str(ref string) => write!(f, "'static: {}", string)?,
+            ObjectValue::String(ref string) => write!(f, "new: {}", string)?,
         }
         Ok(())
     }
@@ -106,9 +104,8 @@ impl<'a> Display for ObjectValue<'a> {
 
 impl<'a> Display for StringObject<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
         write!(f, "{}", self.chars)?;
-    
+
         Ok(())
     }
 }

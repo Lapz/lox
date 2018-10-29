@@ -1,7 +1,7 @@
 use libc::{c_void, free, realloc};
 use std::ptr;
 
-pub unsafe fn reallocate(previous: *mut c_void, old_size: usize, new_size: usize) -> *mut c_void {
+pub unsafe fn reallocate(previous: *mut c_void, _old_size: usize, new_size: usize) -> *mut c_void {
     if new_size == 0 {
         free(previous);
         return ptr::null::<c_void>() as *mut c_void;

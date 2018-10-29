@@ -1,5 +1,5 @@
 use libc::{c_char, c_void, strcmp};
-use object::{Object, ObjectType, RawObject, StringObject,ObjectValue};
+use object::{Object, ObjectType, ObjectValue, RawObject, StringObject};
 use std::ffi::CStr;
 use std::fmt::{self, Debug, Display};
 use std::mem;
@@ -147,9 +147,8 @@ impl Value {
                     let b_string = other.as_string();
 
                     // Refractor to check if strings
-                        
-                        a_string.chars.string() == b_string.chars.string()
-                        
+
+                    a_string.chars.string() == b_string.chars.string()
                 }
             }
         }
@@ -165,8 +164,10 @@ impl Debug for Value {
             } else if self.ty == ValueType::Object {
                 write!(
                     fmt,
-                    "{:?}",
-                    ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                    "{}",
+                    ::std::ffi::CStr::from_ptr(self.as_cstring())
+                        .to_str()
+                        .unwrap()
                 )?;
             } else {
                 write!(fmt, "val:{:?},", self.val.boolean)?;
@@ -192,7 +193,9 @@ impl Display for Value {
                     ObjectType::String => write!(
                         fmt,
                         "{}",
-                        ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                        ::std::ffi::CStr::from_ptr(self.as_cstring())
+                            .to_str()
+                            .unwrap()
                     )?,
                 }
             } else {

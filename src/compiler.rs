@@ -384,12 +384,7 @@ impl PrefixParser for LiteralParselet {
                     },
                 ..
             }) => {
-        
-
-                let object = StringObject::new(
-                    string,
-                    parser.objects,
-                );
+                let object = StringObject::new(string, parser.objects);
 
                 parser.objects = object;
 
