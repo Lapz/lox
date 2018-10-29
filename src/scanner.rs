@@ -118,7 +118,7 @@ impl<'a> Lexer<'a> {
             match ch {
                 '"' => {
                     let end = next.shift(ch);
-
+                    // use next to include the end " and shift start to not include the first "
                     return Ok(spans(TokenType::String(self.slice(start.shift('"'),next)), start, end));
                 }
 
