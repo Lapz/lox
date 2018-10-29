@@ -111,7 +111,7 @@ impl<'a> VM<'a> {
                 b.length,
             );
 
-           ptr::write((buf as *mut c_char).offset((length+1) as isize), b'\0' as i8);
+            ptr::write((buf as *mut c_char).offset((length+1) as isize), b'\0' as i8);
 
             let result = StringObject::from_owned(buf as *mut c_char, length, self.objects);
 

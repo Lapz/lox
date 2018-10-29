@@ -36,7 +36,7 @@ pub enum TokenType<'a> {
     GreaterEqual,
     Less,
     LessEqual,
-    String(String),
+    String(&'a str),
     Number(f32),
     Comment,
     And,
