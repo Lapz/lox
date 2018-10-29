@@ -1,7 +1,6 @@
 use error::Reporter;
 use pos::{CharPosition, Position, Span, Spanned};
 use std::fmt::{self, Display};
-use std::str::Chars;
 use token::{Token, TokenType};
 
 #[derive(Debug)]

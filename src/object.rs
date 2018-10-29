@@ -1,8 +1,7 @@
-use libc::{c_char, c_void, malloc, strcpy};
 use std::fmt::{self, Display};
-use std::mem;
+
 use std::ops::Deref;
-use util::reallocate;
+
 
 pub type RawObject = *mut Object;
 
@@ -79,23 +78,11 @@ impl<'a> Deref for StringObject<'a> {
     }
 }
 
-// impl Drop for Object {
-//     fn drop(&mut self) {
-//         match self.ty {
-//             ObjectType::String => unsafe {
-//                 let mut string: &StringObject = mem::transmute(self);
-//                 // Frees the string
-//                 // ::std::mem::drop(string.chars);
-//                 free!(StringObject, &mut string as *mut _ as *mut c_void);
-//             },
-//         }
-//     }
-// }
 
 impl<'a> Display for ObjectValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ObjectValue::Str(ref string) => write!(f, "'static: {}", string)?,
+            ObjectValue::Str(ref string) => write!(f, "static: {}", string)?,
             ObjectValue::String(ref string) => write!(f, "new: {}", string)?,
         }
         Ok(())

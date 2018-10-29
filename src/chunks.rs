@@ -1,4 +1,3 @@
-use op::opcode;
 use value::Value;
 
 type Line = u32;

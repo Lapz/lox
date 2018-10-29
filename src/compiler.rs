@@ -2,8 +2,8 @@
 // Pretty printing of errors
 use chunks::Chunk;
 use error::Reporter;
-use libc::{c_char, c_void};
-use object::{Object, RawObject, StringObject};
+
+use object::{RawObject, StringObject};
 use opcode;
 use pos::{Span, Spanned};
 use std::collections::{HashMap, VecDeque};

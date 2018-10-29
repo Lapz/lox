@@ -1,7 +1,7 @@
 use pos::Spanned;
 use std::fmt::{self, Display};
 use std::hash::{self, Hash};
-use std::slice::Iter;
+
 use std::vec::IntoIter;
 
 #[derive(Debug, PartialEq, Clone)]

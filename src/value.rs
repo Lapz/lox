@@ -1,6 +1,4 @@
-use libc::{c_char, c_void, strcmp};
-use object::{Object, ObjectType, ObjectValue, RawObject, StringObject};
-use std::ffi::CStr;
+use object::{Object, ObjectType,RawObject, StringObject};
 use std::fmt::{self, Debug, Display};
 use std::mem;
 
@@ -99,14 +97,6 @@ impl Value {
         unsafe { mem::transmute(ptr) }
     }
 
-    /// Returns a pointer to a rust string
-    pub fn as_cstring<'a>(&self) -> *const c_char {
-        let ptr = self.as_object();
-        let obj: &StringObject = unsafe { mem::transmute(ptr) };
-
-        obj.chars.string().as_ptr() as *const i8
-    }
-
     pub fn is_number(&self) -> bool {
         self.ty == ValueType::Number
     }
@@ -165,9 +155,7 @@ impl Debug for Value {
                 write!(
                     fmt,
                     "{}",
-                    ::std::ffi::CStr::from_ptr(self.as_cstring())
-                        .to_str()
-                        .unwrap()
+                    self.as_string()
                 )?;
             } else {
                 write!(fmt, "val:{:?},", self.val.boolean)?;
@@ -193,9 +181,7 @@ impl Display for Value {
                     ObjectType::String => write!(
                         fmt,
                         "{}",
-                        ::std::ffi::CStr::from_ptr(self.as_cstring())
-                            .to_str()
-                            .unwrap()
+                        self.as_string()
                     )?,
                 }
             } else {
