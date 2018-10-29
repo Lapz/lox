@@ -1,9 +1,7 @@
 use chunks::Chunk;
-use libc::{c_char, c_void, malloc, memcpy};
 use object::{Object, RawObject, StringObject};
 use op::opcode;
 use std::mem;
-use std::ptr;
 use value::Value;
 
 const STACK_MAX: usize = 256;
@@ -17,7 +15,6 @@ pub struct VM<'a> {
 }
 
 pub enum VMResult {
-    CompileError,
     RuntimeError,
     Ok,
 }
@@ -105,11 +102,15 @@ impl<'a> VM<'a> {
         new.push_str(a.chars.string());
         new.push_str(b.chars.string());
 
+        #[cfg(feature = "debug")]
+        {
+            println!("{:?}", a.chars);
+            println!("{:?}", b.chars);
+        }
 
-        let result = StringObject::from_owned(new,self.objects);
+        let result = StringObject::from_owned(new, self.objects);
 
         self.push(Value::object(result));
-        
     }
 
     fn runtime_error(&self, msg: &str) -> VMResult {

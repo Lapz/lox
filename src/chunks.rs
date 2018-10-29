@@ -1,4 +1,3 @@
-use op::opcode;
 use value::Value;
 
 type Line = u32;
@@ -79,7 +78,7 @@ impl Chunk {
     pub fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant = self.code[offset + 1];
         println!(
-            "{:16}{:4} '{}'",
+            "{:16}{:4} '{}' ",
             name, constant, self.constants[constant as usize]
         );
         offset + 2

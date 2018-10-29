@@ -1,12 +1,13 @@
 #![feature(nll)]
+
+
 use std::alloc::System;
 
 #[global_allocator]
 static A: System = System;
 
 extern crate libc;
-#[macro_use]
-mod util;
+
 #[macro_use]
 mod value;
 #[macro_use]
@@ -23,13 +24,13 @@ mod vm;
 
 use compiler::Compiler;
 use error::Reporter;
-use object::StringObject;
+
 use op::opcode;
 use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use vm::{VMResult, VM};
+use vm::{VM};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -153,7 +154,6 @@ fn run_file(path: &str) {
 
     if let Err(_) = compiler.compile() {
         reporter.emit(&input);
-        println!("{:#?}", compiler);
     }
 
     let mut vm = VM::new(&compiler.chunks[0], compiler.objects);
