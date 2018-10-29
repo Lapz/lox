@@ -384,9 +384,6 @@ impl PrefixParser for LiteralParselet {
                     },
                 ..
             }) => {
-                // let mut string = string.clone();
-
-                // string.push('\0');
 
                 let object = StringObject::new(
                     string.as_ptr() as *const c_char,

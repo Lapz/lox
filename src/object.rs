@@ -43,18 +43,18 @@ impl StringObject {
     /// Conserveatly copies the string from the pointer
     pub fn new(string: *const c_char, length: usize, next: RawObject) -> RawObject {
         unsafe {
-            // Allocate the memory needed for the string
-            // Copy the string to a buffer
-            let buf = malloc(length * 4) as *mut c_char;
+            // // Allocate the memory needed for the string
+            // // Copy the string to a buffer
+            // let buf = malloc(length * 4) as *mut c_char;
 
-            let chars = strcpy(buf, string) as *mut c_char;
+            // let chars = strcpy(buf, string) as *mut c_char;
 
             
 
             let s = StringObject {
                 obj: Object::new(ObjectType::String, next),
                 length,
-                chars,
+                chars:string as *mut c_char,
             };
 
             
@@ -90,8 +90,8 @@ impl Drop for Object {
             ObjectType::String => unsafe {
                 let mut string: &StringObject = mem::transmute(self); 
                 // Frees the string 
-                free_array!(char, string.chars as *mut c_void, string.length + 1);
-                free!(StringObject,&mut string as *mut _ as *mut c_void);
+                // free_array!(char, string.chars as *mut c_void, string.length + 1);
+                // free!(StringObject,&mut string as *mut _ as *mut c_void);
             },
         }
     }
