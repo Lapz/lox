@@ -99,12 +99,12 @@ impl Value {
         unsafe { mem::transmute(ptr) }
     }
 
-    /// Returns a pointer to an array of chars
-    pub fn as_cstring<'a>(&self) -> &ObjectValue<'a> {
+    /// Returns a pointer to a rust string
+    pub fn as_cstring<'a>(&self) -> *const c_char {
         let ptr = self.as_object();
         let obj: &StringObject = unsafe { mem::transmute(ptr) };
 
-        &obj.chars
+        obj.chars.string().as_ptr() as *const i8
     }
 
     pub fn is_number(&self) -> bool {
@@ -161,15 +161,15 @@ impl Debug for Value {
         write!(fmt, "Value {{")?;
         unsafe {
             if self.ty == ValueType::Number || self.ty == ValueType::Nil {
-                write!(fmt, "val:{},", self.val.number)?;
+                write!(fmt, "val:{:?},", self.val.number)?;
             } else if self.ty == ValueType::Object {
                 write!(
                     fmt,
-                    "{}",
-                    self.as_cstring()
+                    "{:?}",
+                    ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
                 )?;
             } else {
-                write!(fmt, "val:{},", self.val.boolean)?;
+                write!(fmt, "val:{:?},", self.val.boolean)?;
             }
         }
         write!(fmt, " ty:{:?}", self.ty)?;
@@ -191,8 +191,8 @@ impl Display for Value {
                 match obj.ty {
                     ObjectType::String => write!(
                         fmt,
-                        "{:?}",
-                        self.as_cstring()
+                        "{}",
+                        ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
                     )?,
                 }
             } else {
