@@ -3,7 +3,7 @@
 use chunks::Chunk;
 use error::Reporter;
 use libc::{c_char, c_void};
-use object::{Object, StringObject,RawObject};
+use object::{Object, RawObject, StringObject};
 use opcode;
 use pos::{Span, Spanned};
 use std::collections::{HashMap, VecDeque};
@@ -384,13 +384,10 @@ impl PrefixParser for LiteralParselet {
                     },
                 ..
             }) => {
-                let mut string = string.clone();
-
-                string.push('\0');
+        
 
                 let object = StringObject::new(
-                    string.as_ptr() as *const c_char,
-                    string.len() - 1, // Users do not need to know about the null byte
+                    string,
                     parser.objects,
                 );
 

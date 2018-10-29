@@ -1,5 +1,5 @@
 use libc::{c_char, c_void, strcmp};
-use object::{Object, ObjectType, StringObject,RawObject};
+use object::{Object, ObjectType, RawObject, StringObject,ObjectValue};
 use std::ffi::CStr;
 use std::fmt::{self, Debug, Display};
 use std::mem;
@@ -58,7 +58,7 @@ impl Value {
     }
 
     pub fn as_bool(&self) -> bool {
-       debug_assert_eq!(
+        debug_assert_eq!(
             self.ty,
             ValueType::Bool,
             "Value is type `{:?}` instead of {:?}",
@@ -70,7 +70,6 @@ impl Value {
     }
 
     pub fn as_number(&self) -> f32 {
-
         debug_assert_eq!(
             self.ty,
             ValueType::Number,
@@ -78,7 +77,6 @@ impl Value {
             self.ty,
             ValueType::Number
         );
-       
 
         unsafe { self.val.number }
     }
@@ -95,18 +93,18 @@ impl Value {
         unsafe { self.val.object }
     }
 
-    pub fn as_string(&self) -> &StringObject {
+    pub fn as_string<'a>(&self) -> &StringObject<'a> {
         let ptr = self.as_object();
 
         unsafe { mem::transmute(ptr) }
     }
 
-    /// Returns a pointer to an array of chars
-    pub fn as_cstring(&self) -> *mut c_char {
+    /// Returns a pointer to a rust string
+    pub fn as_cstring<'a>(&self) -> *const c_char {
         let ptr = self.as_object();
         let obj: &StringObject = unsafe { mem::transmute(ptr) };
 
-        obj.chars
+        obj.chars.string().as_ptr() as *const i8
     }
 
     pub fn is_number(&self) -> bool {
@@ -132,8 +130,7 @@ impl Value {
     pub fn is_string(&self) -> bool {
         unsafe {
             self.is_object()
-                && mem::transmute::<RawObject, &Object>(self.as_object()).ty
-                    == ObjectType::String
+                && mem::transmute::<RawObject, &Object>(self.as_object()).ty == ObjectType::String
         }
     }
 
@@ -150,16 +147,9 @@ impl Value {
                     let b_string = other.as_string();
 
                     // Refractor to check if strings
-
-
-                    println!("{:?}",a_string);
-                    println!("{:?}",b_string);
-
-                    unsafe {
-                        // println!("{}",strcmp(a_string.chars, b_string.chars) == 0);
-                        a_string.length == b_string.length
-                            && strcmp(a_string.chars, b_string.chars) == 0
-                    }
+                        
+                        a_string.chars.string() == b_string.chars.string()
+                        
                 }
             }
         }
@@ -171,15 +161,15 @@ impl Debug for Value {
         write!(fmt, "Value {{")?;
         unsafe {
             if self.ty == ValueType::Number || self.ty == ValueType::Nil {
-                write!(fmt, "val:{},", self.val.number)?;
+                write!(fmt, "val:{:?},", self.val.number)?;
             } else if self.ty == ValueType::Object {
                 write!(
                     fmt,
-                    "{}",
-                    CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                    "{:?}",
+                    ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
                 )?;
             } else {
-                write!(fmt, "val:{},", self.val.boolean)?;
+                write!(fmt, "val:{:?},", self.val.boolean)?;
             }
         }
         write!(fmt, " ty:{:?}", self.ty)?;
@@ -202,7 +192,7 @@ impl Display for Value {
                     ObjectType::String => write!(
                         fmt,
                         "{}",
-                        CStr::from_ptr(self.as_cstring()).to_str().unwrap()
+                        ::std::ffi::CStr::from_ptr(self.as_cstring()).to_str().unwrap()
                     )?,
                 }
             } else {

@@ -77,7 +77,7 @@ fn repl() {
             continue;
         }
 
-        let mut vm = VM::new(&compiler.chunks[0],compiler.objects);
+        let mut vm = VM::new(&compiler.chunks[0], compiler.objects);
 
         vm.interpret();
     }
@@ -156,7 +156,7 @@ fn run_file(path: &str) {
         println!("{:#?}", compiler);
     }
 
-    let mut vm = VM::new(&compiler.chunks[0],compiler.objects);
+    let mut vm = VM::new(&compiler.chunks[0], compiler.objects);
 
     vm.interpret();
 }

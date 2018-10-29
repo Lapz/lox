@@ -1,9 +1,8 @@
-use libc::{c_char, c_void,malloc, strcpy};
-use std::ops::Deref;
+use libc::{c_char, c_void, malloc, strcpy};
+use std::fmt::{self, Display};
 use std::mem;
+use std::ops::Deref;
 use util::reallocate;
-use std::fmt::{self,Display};
-
 
 pub type RawObject = *mut Object;
 
@@ -22,61 +21,59 @@ pub struct Object {
 
 #[derive(Debug, Clone)]
 #[repr(C)]
-pub struct StringObject {
+pub struct StringObject<'a> {
     pub obj: Object,
-    pub length: usize,
-    pub chars: *mut c_char,
+    pub chars: ObjectValue<'a>,
+}
+
+#[derive(Debug, Clone)]
+#[repr(C)]
+pub enum ObjectValue<'a> {
+    Str(&'a str),
+    String(String),
 }
 
 impl Object {
     pub fn new(ty: ObjectType, next: RawObject) -> Self {
         Object { ty, next }
     }
-
-  
 }
 
-
-
-impl StringObject {
+impl<'a> StringObject<'a> {
     /// Create a new string Object that dosen't take ownership of the string passed in
     /// Conserveatly copies the string from the pointer
-    pub fn new(string: *const c_char, length: usize, next: RawObject) -> RawObject {
-        unsafe {
-            // Allocate the memory needed for the string
-            // Copy the string to a buffer
-            let buf = malloc(length * 4) as *mut c_char;
+    pub fn new(string: &'a str,next: RawObject) -> RawObject {
+        let s = StringObject {
+            obj: Object::new(ObjectType::String, next),
+            chars: ObjectValue::Str(string),
+        };
 
-            let chars = strcpy(buf, string) as *mut c_char;
-
-            
-
-            let s = StringObject {
-                obj: Object::new(ObjectType::String, next),
-                length,
-                chars,
-            };
-
-            
-
-            Box::into_raw(Box::new(s)) as RawObject
-
-        }
+        Box::into_raw(Box::new(s)) as RawObject
     }
 
     /// Creates a new String Object that takes ownership of the string passed in
-    pub fn from_owned(chars: *const c_char, length: usize, next: RawObject) -> RawObject {
+    pub fn from_owned(chars: String,next: RawObject) -> RawObject {
         let s = StringObject {
             obj: Object::new(ObjectType::String, next),
-            length,
-            chars: chars as *mut c_char,
+            chars: ObjectValue::String(chars),
         };
 
         Box::into_raw(Box::new(s)) as RawObject
     }
 }
 
-impl Deref for StringObject {
+
+impl <'a> ObjectValue<'a> {
+
+    pub fn string(&self) -> &str {
+        match *self {
+            ObjectValue::Str(ref string) => string,
+            ObjectValue::String(ref string) => string, 
+        }
+    }
+}
+
+impl <'a> Deref for StringObject<'a> {
     type Target = Object;
 
     fn deref(&self) -> &Self::Target {
@@ -84,38 +81,34 @@ impl Deref for StringObject {
     }
 }
 
-impl Drop for Object {
-    fn drop(&mut self) {
-        match self.ty {
-            ObjectType::String => unsafe {
-                let mut string: &StringObject = mem::transmute(self); 
-                // Frees the string 
-                free_array!(char, string.chars as *mut c_void, string.length + 1);
-                free!(StringObject,&mut string as *mut _ as *mut c_void);
-            },
-        }
-    }
-}
+// impl Drop for Object {
+//     fn drop(&mut self) {
+//         match self.ty {
+//             ObjectType::String => unsafe {
+//                 let mut string: &StringObject = mem::transmute(self);
+//                 // Frees the string
+//                 // ::std::mem::drop(string.chars);
+//                 free!(StringObject, &mut string as *mut _ as *mut c_void);
+//             },
+//         }
+//     }
+// }
 
-
-
-impl Display for StringObject {
+impl<'a> Display for ObjectValue<'a> {
     fn fmt(&self,f:&mut fmt::Formatter) -> fmt::Result {
-
-        unsafe {
-            write!(f, "{}",::std::ffi::CStr::from_ptr(self.chars).to_str().unwrap())?;
+        match *self {
+            ObjectValue::Str(ref string) => write!(f,"'static: {}",string)?,
+            ObjectValue::String(ref string) => write!(f,"new: {}",string)?,
         }
         Ok(())
     }
 }
 
-
-// impl Debug for StringObject {
-//     fn fmt(&self,f:&mut fmt::Formatter) -> fmt::Result {
-
-//         unsafe {
-//             write!(f, "{:?}",::std::ffi::CStr::from_ptr(self.chars).to_str().unwrap())?;
-//         }
-//         Ok(())
-//     }
-// }
+impl<'a> Display for StringObject<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+        write!(f, "{}", self.chars)?;
+    
+        Ok(())
+    }
+}
