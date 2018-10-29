@@ -119,7 +119,7 @@ impl<'a> Lexer<'a> {
                 '"' => {
                     let end = next.shift(ch);
 
-                    return Ok(spans(TokenType::String(self.slice(start.shift('"'),end)), start, end));
+                    return Ok(spans(TokenType::String(self.slice(start.shift('"'),next)), start, end));
                 }
 
                 _=> (),
