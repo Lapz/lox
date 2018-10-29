@@ -106,19 +106,9 @@ impl<'a> Display for ObjectValue<'a> {
 
 impl<'a> Display for StringObject<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {
-            write!(f, "{}", self.chars)?;
-        }
+        
+        write!(f, "{}", self.chars)?;
+    
         Ok(())
     }
 }
-
-// impl Debug for StringObject {
-//     fn fmt(&self,f:&mut fmt::Formatter) -> fmt::Result {
-
-//         unsafe {
-//             write!(f, "{:?}",::std::ffi::CStr::from_ptr(self.chars).to_str().unwrap())?;
-//         }
-//         Ok(())
-//     }
-// }
