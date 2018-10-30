@@ -21,6 +21,8 @@ pub enum TokenType<'a> {
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
     Comma,
     Dot,
     Minus,
@@ -61,6 +63,7 @@ pub enum TokenType<'a> {
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 pub enum RuleToken {
     LParen,
+    LBracket,
     Minus,
     Plus,
     Slash,
@@ -102,6 +105,8 @@ impl<'a> Display for TokenType<'a> {
             TokenType::RParen => write!(f, ")"),    // )
             TokenType::LBrace => write!(f, "{{"),   // {
             TokenType::RBrace => write!(f, "}}"),   // }
+            TokenType::LBracket => write!(f, "["),   // [
+            TokenType::RBracket => write!(f, "]"),   // ]
             // Keywords,
             TokenType::Fun => write!(f, "fun"),
             TokenType::Print => write!(f, "print"),
@@ -159,6 +164,8 @@ impl<'a> TokenType<'a> {
             TokenType::EOF => RuleToken::None,
             TokenType::LParen => RuleToken::LParen,
             TokenType::RParen => RuleToken::None,
+            TokenType::LBracket => RuleToken::LBracket,
+            TokenType::RBracket => RuleToken::None,
             TokenType::Bang => RuleToken::Bang,
             TokenType::Less
             | TokenType::Greater
@@ -167,6 +174,7 @@ impl<'a> TokenType<'a> {
             | TokenType::GreaterEqual => RuleToken::Comparison,
             TokenType::Equal | TokenType::EqualEqual => RuleToken::Equality,
             TokenType::Nil => RuleToken::Literal,
+            TokenType::Semicolon => RuleToken::None,
             ref e => unimplemented!("{:?}", e),
         }
     }

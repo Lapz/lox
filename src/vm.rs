@@ -37,10 +37,10 @@ impl<'a> VM<'a> {
     }
 
     pub fn run(&mut self) -> VMResult {
-        loop {
-            #[cfg(feature = "debug")]
-            self.chunk.disassemble("test");
+        #[cfg(feature = "debug")]
+        self.chunk.disassemble("test");
 
+        loop {
             if cfg!(feature = "stack") {
                 for byte in self.stack[1..self.stack_top].iter() {
                     print!("[{}]", byte);
@@ -84,6 +84,18 @@ impl<'a> VM<'a> {
                 }
                 opcode::GREATER => binary_op!(>,bool,self),
                 opcode::LESS => binary_op!(<,bool,self),
+                opcode::INDEX => {
+                    let b = self.pop().as_number(); // index 
+                    let a = self.pop(); // string
+                    let a = a.as_string();
+
+
+                    let ch = &a.chars.string()[b as usize..0];
+
+                    self.push(Value::object(StringObject::new(ch, self.objects)))
+
+                    
+                }
                 _ => return VMResult::RuntimeError,
             }
         }
@@ -152,8 +164,9 @@ impl<'a> Drop for VM<'a> {
     fn drop(&mut self) {
         unsafe {
             let mut object: Option<&Object> = mem::transmute(self.objects);
-
+    
             while object.is_some() {
+
                 let next: &Object = mem::transmute(object.unwrap().next);
                 mem::drop(next);
                 object = Some(next);
