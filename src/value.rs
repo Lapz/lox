@@ -1,4 +1,4 @@
-use object::{Object, ObjectType,RawObject, StringObject};
+use object::{Object, ObjectType, RawObject, StringObject};
 use std::fmt::{self, Debug, Display};
 use std::mem;
 
@@ -133,12 +133,16 @@ impl Value {
                 ValueType::Nil => true,
                 ValueType::Number => self.as_number() == other.as_number(),
                 ValueType::Object => {
-                    let a_string = self.as_string();
-                    let b_string = other.as_string();
+                    if self.is_string() && other.is_string() {
+                        let a_string = self.as_string();
+                        let b_string = other.as_string();
 
-                    // Refractor to check if strings
+                        // Refractor to check if strings
 
-                    a_string.chars.string() == b_string.chars.string()
+                        a_string.chars.string() == b_string.chars.string()
+                    } else {
+                        false
+                    }
                 }
             }
         }
@@ -152,11 +156,7 @@ impl Debug for Value {
             if self.ty == ValueType::Number || self.ty == ValueType::Nil {
                 write!(fmt, "val:{:?},", self.val.number)?;
             } else if self.ty == ValueType::Object {
-                write!(
-                    fmt,
-                    "{}",
-                    self.as_string()
-                )?;
+                write!(fmt, "{}", self.as_string())?;
             } else {
                 write!(fmt, "val:{:?},", self.val.boolean)?;
             }
@@ -178,11 +178,7 @@ impl Display for Value {
                 let obj: &Object = mem::transmute(self.as_object());
 
                 match obj.ty {
-                    ObjectType::String => write!(
-                        fmt,
-                        "{}",
-                        self.as_string()
-                    )?,
+                    ObjectType::String => write!(fmt, "{}", self.as_string())?,
                 }
             } else {
                 write!(fmt, "{}", self.val.boolean)?;

@@ -13,4 +13,5 @@ pub mod opcode {
     pub const EQUAL: u8 = 0x11;
     pub const GREATER: u8 = 0x12;
     pub const LESS: u8 = 0x13;
+    pub const INDEX:u8 = 0x14;
 }

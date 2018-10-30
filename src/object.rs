@@ -1,7 +1,6 @@
 use std::fmt::{self, Display};
-
 use std::ops::Deref;
-
+use std::mem;
 
 pub type RawObject = *mut Object;
 
@@ -78,6 +77,29 @@ impl<'a> Deref for StringObject<'a> {
     }
 }
 
+impl Drop for Object {
+    fn drop(&mut self) {
+
+        match self.ty {
+            ObjectType::String => {
+                unsafe {
+                    let string:&StringObject = mem::transmute(self);
+
+                    mem::drop(string);
+                }
+            }
+        }
+    }
+}
+
+impl <'a> Drop for StringObject<'a> {
+    fn drop(&mut self) {
+        match &self.chars {
+            ObjectValue::String(string) => mem::drop(string),
+            _ => ()
+        }
+    }
+}
 
 impl<'a> Display for ObjectValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -86,16 +86,20 @@ impl<'a> Compiler<'a> {
         compiler.prefix(RuleToken::Minus, &UnaryParselet);
         compiler.prefix(RuleToken::Bang, &UnaryParselet);
         compiler.prefix(RuleToken::LParen, &GroupingParselet);
+        
 
         // Infix appers in the middle of an expr
         compiler.infix(RuleToken::Plus, &BinaryParselet(Precedence::Term));
         compiler.infix(RuleToken::Minus, &BinaryParselet(Precedence::Term));
         compiler.infix(RuleToken::Slash, &BinaryParselet(Precedence::Factor));
         compiler.infix(RuleToken::Star, &BinaryParselet(Precedence::Factor));
+        compiler.infix(RuleToken::LBracket,&IndexParselet(Precedence::Call));
         compiler.infix(
             RuleToken::Comparison,
             &BinaryParselet(Precedence::Comparison),
         );
+
+        // compiler.infix(RuleToken::LBracket,&IndexParselet(Precedence::Call));
         compiler.infix(RuleToken::Equality, &BinaryParselet(Precedence::Equality));
 
         compiler
@@ -122,7 +126,8 @@ impl<'a> Compiler<'a> {
 
     pub fn compile(&mut self) -> ParseResult<()> {
         self.expression(Precedence::Assignment)?;
-        self.check(TokenType::EOF, "Expected EOF")?;
+        self.check(TokenType::Semicolon, "Expected ';' after an expression")?;
+
         self.end_chunk();
         Ok(())
     }
@@ -478,3 +483,7 @@ impl PrefixParser for GroupingParselet {
         Ok(())
     }
 }
+
+
+#[derive(Debug)]
+pub struct IndexParselet(pub Precedence);

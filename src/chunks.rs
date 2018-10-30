@@ -1,3 +1,5 @@
+#[cfg(feature = "debug")]
+use opcode;
 use value::Value;
 
 type Line = u32;

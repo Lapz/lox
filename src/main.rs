@@ -1,6 +1,5 @@
 #![feature(nll)]
 
-
 use std::alloc::System;
 
 #[global_allocator]
@@ -30,7 +29,7 @@ use scanner::Lexer;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use vm::{VM};
+use vm::VM;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
